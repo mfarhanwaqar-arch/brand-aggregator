@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brand vs Non-Brand Aggregator — v2 (Brand + ASIN + KW list)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root { --bg:#0b0d10; --panel:#11151a; --muted:#64748b; --text:#e5e7eb; --accent:#06b6d4; --danger:#ef4444; }
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Arial,sans-serif;margin:0;background:linear-gradient(120deg,#0b0d10,#0f1720);color:var(--text)}
+    .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
+    h1{font-size:28px;margin:0 0 8px}
+    p.sub{color:var(--muted);margin:0 0 24px}
+    .card{background:var(--panel);border:1px solid #1f2937;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    label{font-weight:600;display:block;margin:8px 0 6px}
+    textarea,input[type="text"]{width:100%;background:#0b1220;border:1px solid #2a3441;color:var(--text);border-radius:10px;padding:10px}
+    textarea{min-height:70px;resize:vertical}
+    .row{display:grid;gap:16px}
+    .row.cols-3{grid-template-columns:2fr 2fr 1.2fr}
+    .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+    .btn{appearance:none;border:1px solid #2a3441;background:#0b1220;color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    .btn.primary{background:linear-gradient(135deg,#0ea5e9,#22c55e);border:none}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#0b1220;border:1px solid #2a3441}
+    table{border-collapse:collapse;margin-top:16px;width:100%;font-variant-numeric:tabular-nums}
+    th,td{border-bottom:1px solid #1f2937;padding:10px;text-align:right}
+    th{position:sticky;top:0;background:#0b1220;z-index:1}
+    td:first-child,th:first-child{text-align:left;white-space:normal;overflow-wrap:anywhere;word-break:break-word;max-width:28ch}
+    .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:16px 0}
+    .stat{background:#0b1220;border:1px solid #2a3441;border-radius:12px;padding:12px}
+    .stat .label{color:var(--muted);font-size:12px}
+    .stat .value{font-size:18px;font-weight:700}
+    .badge{display:inline-block;background:#0b1220;border:1px solid #2a3441;padding:2px 8px;border-radius:999px;font-size:12px;color:#94a3b8}
+    .error{color:var(--danger);margin-top:8px}
+    .footer{margin:28px 0 8px;color:#94a3b8;font-size:12px}
+    .flex{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .search{width:260px}
+    /* Wrap long Search Terms and keep table widths sane */
+    #termsOut table, #aggOut table { table-layout: fixed; }
+    #termsOut td:first-child, #termsOut th:first-child,
+    #aggOut td:first-child, #aggOut th:first-child {
+      white-space: normal !important;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.25;
+    }
+    .btn.toggle{padding:8px 10px}
+    .btn.toggle.active{border-color:#22c55e; box-shadow:0 0 0 1px #22c55e inset}
+  .cta {display:flex; gap:12px; flex-wrap:wrap; margin: 12px 0 16px}
+    .ctabtn { display:inline-block; font-weight:800; font-size:16px; text-decoration:none; padding:12px 16px; border-radius:12px; border:1px solid #22c55e; background:linear-gradient(135deg,#22c55e,#0ea5e9); color:#0b0d10; box-shadow:0 6px 18px rgba(0,0,0,.35) }
+    .ctabtn.secondary { background:#0b1220; color:var(--text); border:1px solid #0ea5e9 }
+    .ctabtn:focus, .ctabtn:hover { filter:brightness(1.06) }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Brand vs Non-Brand PPC Aggregator</h1>
+    <p class="sub">Now supports brand <strong>name</strong> + <strong>ASINs</strong>, Excel (<code>.xlsx</code>) & CSV, and a per-keyword list.</p>
+
+    <div class="cta">
+      <a class="ctabtn" href="https://calendly.com/m-farhanwaqar/30min" target="_blank" rel="noopener noreferrer"><strong>Book a Call</strong></a>
+      <a class="ctabtn secondary" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9?pvs=143" target="_blank" rel="noopener noreferrer"><strong>Live Case Study</strong></a>
+    </div>
+
+    <div class="card">
+      <div class="row cols-3">
+        <div>
+          <label>Brand name</label>
+          <input type="text" id="brandName" placeholder="e.g. Opna" />
+          <div class="pill" style="margin-top:8px"><input type="checkbox" id="wholeWord" checked style="margin-right:8px"/>Whole-word match</div>
+        </div>
+        <div>
+          <label>Brand ASINs (comma or newline separated)</label>
+          <textarea id="brandASINs" placeholder="B0ABC123, B0XYZ456\nor one per line"></textarea>
+          <div class="badge">ASINs match anywhere in the search term</div>
+        </div>
+        <div>
+          <label>Upload report (.csv or .xlsx)</label>
+          <input type="file" id="fileInput" accept=".csv,.xlsx" />
+          <div class="controls" style="margin-top:8px">
+            <button class="btn" id="sampleBtn">Download sample CSV</button>
+            <div class="pill"><input type="checkbox" id="remember" checked style="margin-right:8px"/>Remember inputs</div>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="processBtn">Process</button>
+        <button class="btn" id="exportAggBtn" disabled>Export summary CSV</button>
+        <button class="btn" id="exportTermsBtn" disabled>Export per-term CSV</button>
+        <span class="badge" id="rowCount">No rows</span>
+      </div>
+      <div id="error" class="error"></div>
+    </div>
+
+    <div id="summary" class="grid" style="display:none"></div>
+
+    <div class="card" id="aggCard" style="display:none">
+      <div class="flex"><h3 style="margin:0">Aggregated (Brand vs Non-Brand)</h3><span class="badge" id="detectedCols"></span></div>
+      <div id="aggOut"></div>
+    </div>
+
+    <div class="card" id="termsCard" style="display:none">
+      <div class="flex" style="justify-content:space-between">
+        <div class="flex"><h3 style="margin:0">Per Search Term</h3><span class="badge" id="termCount"></span></div>
+        <div class="flex" style="gap:8px;align-items:center">
+          <div id="brandToggle" class="flex" style="gap:6px">
+            <button type="button" class="btn toggle active" data-mode="all">All</button>
+            <button type="button" class="btn toggle" data-mode="branded">Branded</button>
+            <button type="button" class="btn toggle" data-mode="non">Non‑Branded</button>
+          </div>
+          <input id="termFilter" class="search" placeholder="Filter terms..." />
+        </div>
+      </div>
+      <div id="termsOut"></div>
+    </div>
+
+    <div class="footer">v2.0 — Brand name + ASIN logic • XLSX/CSV parsing • KW list • Exports.</div>
+  </div>
+
+  <script>
+    // ===== Utilities =====
+    const qs = id => document.getElementById(id);
+    const NUM = v => {
+      if (v === null || v === undefined) return 0;
+      if (typeof v === 'number') return v;
+      const cleaned = String(v).replace(/[^0-9.\-]/g,'');
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? 0 : n;
+    };
+    const fmt0 = n => (n||0).toLocaleString(undefined,{maximumFractionDigits:0});
+    const fmt2 = n => (n||0).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+    const normalize = s => (s||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'');
+
+    function initMetrics(){ return {impressions:0, clicks:0, spend:0, sales:0, orders:0, units:0}; }
+    function add(a,b){a.impressions+=b.impressions||0;a.clicks+=b.clicks||0;a.spend+=b.spend||0;a.sales+=b.sales||0;a.orders+=b.orders||0;a.units+=b.units||0;}
+    function accumulate(t, row, c){
+      t.impressions += NUM(row[c.impr]);
+      t.clicks      += NUM(row[c.clicks]);
+      t.spend       += NUM(row[c.spend]);
+      t.sales       += NUM(row[c.sales]);
+      t.orders      += NUM(row[c.orders]);
+      t.units       += NUM(row[c.units]);
+    }
+    function compute(m){
+      const ctr = m.impressions ? (m.clicks / m.impressions) * 100 : 0;
+      const cvr = m.clicks ? (m.orders / m.clicks) * 100 : 0;
+      const acos = m.sales ? (m.spend / m.sales) * 100 : 0;
+      const cpc = m.clicks ? (m.spend / m.clicks) : 0;
+      const roas = m.spend ? (m.sales / m.spend) : 0;
+      return {ctr,cvr,acos,cpc,roas};
+    }
+
+    function rowHTML(label, m){
+      const {ctr,cvr,acos,cpc,roas} = compute(m);
+      return `<tr>
+        <td>${label}</td>
+        <td>${fmt0(m.impressions)}</td>
+        <td>${fmt0(m.clicks)}</td>
+        <td>${fmt2(ctr)}</td>
+        <td>${fmt2(m.spend)}</td>
+        <td>${fmt2(m.sales)}</td>
+        <td>${fmt0(m.orders)}</td>
+        <td>${fmt0(m.units)}</td>
+        <td>${fmt2(cvr)}</td>
+        <td>${fmt2(acos)}</td>
+        <td>${fmt2(cpc)}</td>
+        <td>${fmt2(roas)}</td>`;
+    }
+
+    // ===== Column detection =====
+    function detectColumn(headers, candidates){
+      const lowerMap = new Map(headers.map(h=>[h.toLowerCase().trim(),h]));
+      for(const c of candidates){
+        const key = c.toLowerCase();
+        if (lowerMap.has(key)) return lowerMap.get(key);
+      }
+      return null;
+    }
+    function detectColumns(headers){
+      const term = detectColumn(headers, ['Customer Search Term','Search Term','Query','Customer search term']);
+      const impr = detectColumn(headers, ['Impressions','Ad Impressions','Impr.']);
+      const clicks = detectColumn(headers, ['Clicks','Ad Clicks']);
+      const spend = detectColumn(headers, ['Spend','Cost','Total Spend','Ad Spend']);
+      const sales = detectColumn(headers, ['Sales','Attributed Sales','14 Day Total Sales','7 Day Total Sales','14-Day Sales','Total Sales','Revenue']);
+      const orders = detectColumn(headers, ['Orders','14 Day Total Orders (#)','7 Day Total Orders (#)','Total Orders','Purchases']);
+      const units = detectColumn(headers, ['Units','14 Day Total Units (#)','7 Day Total Units (#)','Total Units','Units Sold']);
+      const cols = {term, impr, clicks, spend, sales, orders, units};
+      const missing = Object.entries(cols).filter(([k,v])=>!v).map(([k])=>k);
+      return { cols, missing };
+    }
+
+    // ===== Brand matcher (name + ASINs) =====
+    function buildBrandMatcher(brandName, asinList, wholeWord){
+      const b = normalize(brandName||'').trim();
+      const asins = asinList.split(/[\n,]/).map(x=>x.trim()).filter(Boolean).map(x=>x.toLowerCase());
+
+      const rxBrand = b ? new RegExp(wholeWord ? `(^|[^a-z0-9])${b.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}([^a-z0-9]|$)` : b, 'i') : null;
+      const rxAsins = asins.map(a => new RegExp(a.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i'));
+
+      return term => {
+        const t = normalize(term);
+        if (rxBrand && rxBrand.test(t)) return true;
+        return rxAsins.some(rx => rx.test(t));
+      };
+    }
+
+    // ===== Rendering =====
+    function renderSummary(branded, non){
+      const total = { ...initMetrics() }; add(total, branded); add(total, non);
+      const blocks = [
+        {label:'Branded ACOS %', value: compute(branded).acos},
+        {label:'Non-Branded ACOS %', value: compute(non).acos},
+        {label:'Branded ROAS', value: compute(branded).roas},
+        {label:'Non-Branded ROAS', value: compute(non).roas},
+        {label:'Total Spend', value: total.spend},
+        {label:'Total Sales', value: total.sales},
+      ];
+      qs('summary').innerHTML = blocks.map(b=>`<div class="stat"><div class="label">${b.label}</div><div class="value">${fmt2(b.value)}</div></div>`).join('');
+      qs('summary').style.display='grid';
+    }
+
+    function renderAgg(branded, non){
+      const total = { ...initMetrics() }; add(total, branded); add(total, non);
+      const html = `<table><thead><tr>
+        <th>Type</th><th>Impressions</th><th>Clicks</th><th>CTR %</th><th>Spend</th><th>Sales</th><th>Orders</th><th>Units</th><th>CVR %</th><th>ACOS %</th><th>CPC</th><th>ROAS</th>
+      </tr></thead><tbody>
+        ${rowHTML('Branded', branded)}
+        ${rowHTML('Non-Branded', non)}
+        ${rowHTML('Total', total)}
+      </tbody></table>`;
+      qs('aggOut').innerHTML = html;
+      qs('aggCard').style.display='';
+    }
+
+    function renderTerms(terms){
+      const rowsHtml = terms.map(t=>{ 
+        const m = compute(t.metrics); 
+        return `<tr data-branded="${t.branded ? 'yes' : 'no'}">
+          <td>${t.term}</td>
+          <td>${t.branded ? 'Yes' : 'No'}</td>
+          <td>${fmt0(t.metrics.impressions)}</td>
+          <td>${fmt0(t.metrics.clicks)}</td>
+          <td>${fmt2(m.ctr)}</td>
+          <td>${fmt2(t.metrics.spend)}</td>
+          <td>${fmt2(t.metrics.sales)}</td>
+          <td>${fmt0(t.metrics.orders)}</td>
+          <td>${fmt0(t.metrics.units)}</td>
+          <td>${fmt2(m.cvr)}</td>
+          <td>${fmt2(m.acos)}</td>
+          <td>${fmt2(m.cpc)}</td>
+          <td>${fmt2(m.roas)}</td>
+        </tr>`; 
+      }).join('');
+
+      const html = `<table><thead><tr>
+        <th>Search Term</th><th>Branded?</th><th>Impressions</th><th>Clicks</th><th>CTR %</th><th>Spend</th><th>Sales</th><th>Orders</th><th>Units</th><th>CVR %</th><th>ACOS %</th><th>CPC</th><th>ROAS</th>
+      </tr></thead><tbody>${rowsHtml}</tbody></table>`;
+
+      qs('termsOut').innerHTML = html;
+      qs('termsCard').style.display='';
+      qs('termCount').textContent = `${terms.length.toLocaleString()} terms`;
+
+      let mode = 'all';
+      function applyFilters(){
+        const q = normalize(qs('termFilter').value.trim());
+        const trs = qs('termsOut').querySelectorAll('tbody tr');
+        trs.forEach(tr => {
+          const cell = tr.cells && tr.cells[0];
+          const txt = normalize(cell ? cell.textContent : '');
+          const br = tr.dataset.branded; // 'yes' or 'no'
+          const modeMatch = mode==='all' || (mode==='branded' && br==='yes') || (mode==='non' && br==='no');
+          const textMatch = !q || txt.includes(q);
+          tr.style.display = (modeMatch && textMatch) ? '' : 'none';
+        });
+      }
+
+      // filter typing
+      qs('termFilter').addEventListener('input', applyFilters);
+
+      // toggle buttons
+      document.querySelectorAll('#brandToggle .btn.toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#brandToggle .btn.toggle').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          mode = btn.dataset.mode;
+          applyFilters();
+        });
+      });
+    }
+
+    // ===== Persistence =====
+    (function initPersist(){
+      const saved = localStorage.getItem('bvnb_v2');
+      if (saved){ try{ const j = JSON.parse(saved); qs('brandName').value = j.brand||''; qs('brandASINs').value=j.asins||''; qs('wholeWord').checked=!!j.whole; qs('remember').checked=!!j.remember; }catch(e){} }
+      function save(){ if(!qs('remember').checked){localStorage.removeItem('bvnb_v2');return;} localStorage.setItem('bvnb_v2', JSON.stringify({brand:qs('brandName').value, asins:qs('brandASINs').value, whole:qs('wholeWord').checked, remember:qs('remember').checked})); }
+      ['brandName','brandASINs','wholeWord','remember'].forEach(id=>qs(id).addEventListener('input', save));
+      qs('wholeWord').addEventListener('change', save);
+      qs('remember').addEventListener('change', save);
+    })();
+
+    // ===== Parsing (CSV or XLSX) =====
+    function readFile(file){
+      return new Promise((resolve, reject)=>{
+        if (!file) return reject(new Error('No file'));
+        const ext = (file.name.split('.').pop()||'').toLowerCase();
+        if (ext === 'csv'){
+          Papa.parse(file, { header:true, skipEmptyLines:true, complete: r=>resolve({rows:r.data, headers:r.meta.fields||[]} ), error: reject });
+        } else if (ext === 'xlsx'){
+          const fr = new FileReader();
+          fr.onload = e => { try{ const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'}); const ws = wb.Sheets[wb.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(ws, {defval:""}); const headers = XLSX.utils.sheet_to_json(ws, {header:1})[0] || []; resolve({rows, headers}); } catch(err){ reject(err); } };
+          fr.onerror = reject; fr.readAsArrayBuffer(file);
+        } else {
+          reject(new Error('Unsupported file type. Please upload .csv or .xlsx'));
+        }
+      });
+    }
+
+    // ===== Exports =====
+    function exportCSV(rows, name){
+      const csv = Papa.unparse(rows);
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // ===== Main =====
+    qs('processBtn').onclick = async () => {
+      const file = qs('fileInput').files && qs('fileInput').files[0];
+      const brandName = qs('brandName').value.trim();
+      const asinList = qs('brandASINs').value.trim();
+      const whole = qs('wholeWord').checked;
+      const err = qs('error'); err.textContent='';
+
+      if(!file){ err.textContent='Please select a CSV or XLSX report.'; return; }
+      if(!brandName && !asinList){ err.textContent='Enter a brand name and/or at least one ASIN.'; return; }
+
+      let parsed; try{ parsed = await readFile(file); }catch(e){ err.textContent = 'Failed to read file: ' + (e?.message||e); return; }
+      const data = parsed.rows||[]; qs('rowCount').textContent = `${data.length.toLocaleString()} rows`;
+      if(!data.length){ err.textContent='No data rows found.'; return; }
+
+      const headers = parsed.headers && parsed.headers.length ? parsed.headers : Object.keys(data[0]||{});
+      const {cols, missing} = detectColumns(headers);
+      if (missing.includes('term')){ err.textContent = 'Could not detect the "Customer Search Term" column.'; return; }
+      const missMetrics = missing.filter(m=>m!=='term');
+      if (missMetrics.length){ err.textContent = `Missing required columns: ${missMetrics.join(', ')}`; return; }
+      qs('detectedCols').textContent = `Detected: ${Object.values(cols).join(' · ')}`;
+
+      const isBrand = buildBrandMatcher(brandName, asinList, whole);
+
+      const totals = { branded: initMetrics(), non: initMetrics() };
+      const termMap = new Map(); // term -> {metrics, branded}
+
+      for(const row of data){
+        const termRaw = row[cols.term];
+        const term = String(termRaw||'').trim();
+        if(!term) continue;
+        const branded = isBrand(term);
+        const bucket = branded ? totals.branded : totals.non;
+        accumulate(bucket, row, cols);
+
+        const key = term.toLowerCase();
+        if (!termMap.has(key)) termMap.set(key, { term, branded, metrics: initMetrics() });
+        accumulate(termMap.get(key).metrics, row, cols);
+      }
+
+      renderSummary(totals.branded, totals.non);
+      renderAgg(totals.branded, totals.non);
+
+      // Build per-term array sorted by spend desc
+      const termRows = Array.from(termMap.values()).sort((a,b)=>b.metrics.spend - a.metrics.spend);
+      renderTerms(termRows);
+
+      // Exports
+      qs('exportAggBtn').disabled = false;
+      qs('exportAggBtn').onclick = () => {
+        const t = totals; const total = { ...initMetrics() }; add(total,t.branded); add(total,t.non);
+        exportCSV([
+          {Type:'Branded', ...t.branded, CTR_Pct: compute(t.branded).ctr, CVR_Pct: compute(t.branded).cvr, ACOS_Pct: compute(t.branded).acos, CPC: compute(t.branded).cpc, ROAS: compute(t.branded).roas},
+          {Type:'Non-Branded', ...t.non, CTR_Pct: compute(t.non).ctr, CVR_Pct: compute(t.non).cvr, ACOS_Pct: compute(t.non).acos, CPC: compute(t.non).cpc, ROAS: compute(t.non).roas},
+          {Type:'Total', ...total, CTR_Pct: compute(total).ctr, CVR_Pct: compute(total).cvr, ACOS_Pct: compute(total).acos, CPC: compute(total).cpc, ROAS: compute(total).roas},
+        ], 'brand_vs_nonbrand_summary.csv');
+      };
+
+      qs('exportTermsBtn').disabled = false;
+      qs('exportTermsBtn').onclick = () => {
+        exportCSV(termRows.map(t=>({
+          Term: t.term,
+          Branded: t.branded? 'Yes':'No',
+          Impressions: t.metrics.impressions,
+          Clicks: t.metrics.clicks,
+          CTR_Pct: compute(t.metrics).ctr,
+          Spend: t.metrics.spend,
+          Sales: t.metrics.sales,
+          Orders: t.metrics.orders,
+          Units: t.metrics.units,
+          CVR_Pct: compute(t.metrics).cvr,
+          ACOS_Pct: compute(t.metrics).acos,
+          CPC: compute(t.metrics).cpc,
+          ROAS: compute(t.metrics).roas,
+        })), 'per_term_metrics.csv');
+      };
+    };
+
+    // Sample CSV
+    qs('sampleBtn').onclick = ()=>{
+      const rows = [
+        ['Customer Search Term','Impressions','Clicks','Spend','Sales','Orders','Units'],
+        ['opna water bottle', 1200, 36, 18.50, 220.00, 6, 6],
+        ['opna b0abc123 straw', 900, 18, 12.60, 180.00, 4, 4],
+        ['B0XYZ456 replacement lid', 300, 9, 6.30, 40.00, 2, 2],
+        ['glass bottle 64oz', 5400, 90, 72.00, 310.00, 9, 9],
+        ['half gallon glass water jug', 8000, 88, 99.00, 250.00, 7, 7],
+      ];
+      const csv = Papa.unparse(rows);
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='sample_search_terms.csv'; a.click(); URL.revokeObjectURL(url);
+    };
+  </script>
+</body>
+</html>

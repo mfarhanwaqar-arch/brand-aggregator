@@ -67,6 +67,9 @@
     .ctabtn { display:inline-block; font-weight:800; font-size:16px; text-decoration:none; padding:12px 16px; border-radius:12px; border:1px solid #22c55e; background:linear-gradient(135deg,#22c55e,#0ea5e9); color:#0b0d10; box-shadow:0 6px 18px rgba(0,0,0,.35) }
     .ctabtn.secondary { background:#0b1220; color:var(--text); border:1px solid #0ea5e9 }
     .ctabtn:focus, .ctabtn:hover { filter:brightness(1.06) }
+  /* How-to card tweaks */
+    #howto ol { list-style: decimal; }
+    #howto li { margin: 4px 0; }
 </style>
 </head>
 <body>
@@ -77,6 +80,21 @@
     <div class="cta">
       <a class="ctabtn" href="https://calendly.com/m-farhanwaqar/30min?utm_source=linkedin&utm_medium=lead-magnet&utm_campaign=bvnb_tool" target="_blank" rel="noopener noreferrer"><strong>Book a Call</strong></a>
       <a class="ctabtn secondary" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9?pvs=143&utm_source=linkedin&utm_medium=lead-magnet&utm_campaign=bvnb_tool" target="_blank" rel="noopener noreferrer"><strong>Live Case Study</strong></a>
+    </div>
+
+    <div class="card" id="howto">
+      <div class="flex" style="justify-content:space-between; align-items:center">
+        <h3 style="margin:0">Quick Instructions</h3>
+        <span class="badge">Takes ~30 seconds</span>
+      </div>
+      <ol style="margin:12px 0 0 20px; line-height:1.6; font-weight:600">
+        <li>Download the Bulk File — check only <strong>"Sponsored Products Search term data"</strong>.</li>
+        <li>Make sure to save it as <strong>"CSV"</strong> format.</li>
+        <li>Upload the File.</li>
+        <li>Add a <strong>Brand Name</strong> and <strong>Branded ASIN</strong>.</li>
+        <li>Proceed.</li>
+      </ol>
+      <div class="muted" style="margin-top:8px">(FYI: <code>.xlsx</code> also works, but CSV is recommended.)</div>
     </div>
 
     <div class="card">

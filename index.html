@@ -4,6 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Brand vs Non-Brand Aggregator — v2 (Brand + ASIN + KW list)</title>
+  <!-- Open Graph / LinkedIn preview -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Brand vs Non-Brand PPC Aggregator">
+  <meta property="og:description" content="Free tool: upload your Amazon ST report (CSV/XLSX), split branded vs non-branded, and export insights.">
+  <!-- Replace this image URL after you upload og-image.png to your repo -->
+  <meta property="og:image" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/og-image.png">
+  <meta property="og:url" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/">
+  <!-- Twitter (X) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Brand vs Non-Brand PPC Aggregator">
+  <meta name="twitter:description" content="Upload CSV/XLSX, split branded vs non-branded, export results.">
+  <meta name="twitter:image" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/og-image.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -63,8 +75,8 @@
     <p class="sub">Now supports brand <strong>name</strong> + <strong>ASINs</strong>, Excel (<code>.xlsx</code>) & CSV, and a per-keyword list.</p>
 
     <div class="cta">
-      <a class="ctabtn" href="https://calendly.com/m-farhanwaqar/30min" target="_blank" rel="noopener noreferrer"><strong>Book a Call</strong></a>
-      <a class="ctabtn secondary" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9?pvs=143" target="_blank" rel="noopener noreferrer"><strong>Live Case Study</strong></a>
+      <a class="ctabtn" href="https://calendly.com/m-farhanwaqar/30min?utm_source=linkedin&utm_medium=lead-magnet&utm_campaign=bvnb_tool" target="_blank" rel="noopener noreferrer"><strong>Book a Call</strong></a>
+      <a class="ctabtn secondary" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9?pvs=143&utm_source=linkedin&utm_medium=lead-magnet&utm_campaign=bvnb_tool" target="_blank" rel="noopener noreferrer"><strong>Live Case Study</strong></a>
     </div>
 
     <div class="card">
@@ -84,6 +96,7 @@
           <input type="file" id="fileInput" accept=".csv,.xlsx" />
           <div class="controls" style="margin-top:8px">
             <button class="btn" id="sampleBtn">Download sample CSV</button>
+            <button class="btn" id="ogBtn">Download social preview</button>
             <div class="pill"><input type="checkbox" id="remember" checked style="margin-right:8px"/>Remember inputs</div>
           </div>
         </div>
@@ -421,6 +434,47 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href=url; a.download='sample_search_terms.csv'; a.click(); URL.revokeObjectURL(url);
     };
+
+    // Social preview generator (client-side PNG 1200x630)
+    function generateOgImage(){
+      const w=1200, h=630, scale=2; // retina-quality
+      const canvas = document.createElement('canvas');
+      canvas.width = w*scale; canvas.height = h*scale;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+
+      // background
+      const g = ctx.createLinearGradient(0,0,w,h);
+      g.addColorStop(0,'#0b0d10');
+      g.addColorStop(1,'#0f1720');
+      ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+
+      // accent band
+      const g2 = ctx.createLinearGradient(0,0,w,0);
+      g2.addColorStop(0,'#0ea5e9'); g2.addColorStop(1,'#22c55e');
+      ctx.fillStyle = g2; ctx.fillRect(0,h-8,w,8);
+
+      // title & subtitle
+      ctx.fillStyle = '#e5e7eb';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 56px Inter, Arial, sans-serif';
+      ctx.fillText('Brand vs Non‑Brand PPC Aggregator', w/2, h*0.42, w-80);
+      ctx.font = '24px Inter, Arial, sans-serif';
+      ctx.fillText('Free tool for Amazon ST reports (CSV/XLSX)', w/2, h*0.58, w-80);
+
+      // footer (site)
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '18px Inter, Arial, sans-serif';
+      const site = 'mfarhanwaqar-arch.github.io/brand-aggregator';
+      ctx.fillText(site, w/2, h-28, w-120);
+
+      // download
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = 'og-image.png';
+      a.click();
+    }
+    qs('ogBtn').onclick = generateOgImage;
   </script>
 </body>
 </html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><!-- TODO: Tool Name --> New Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Optional: CSV/XLSX parsers (uncomment if needed) -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
+  <style>
+    :root{--bg:#0b0d10;--panel:#11151a;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--ac:#0ea5e9;--brand:#22c55e}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(120deg,#0b0d10,#0f1720);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif}
+    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    .btn{appearance:none;border:1px solid #2a3441;background:#0b1220;color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;cursor:pointer}
+    .btn.primary{background:linear-gradient(135deg,var(--ac),var(--brand));border:none;color:#0b0d10}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:12px}
+    .pill{display:inline-block;border:1px solid #2a3441;background:#0b1220;border-radius:999px;padding:4px 8px;font-size:12px;color:var(--muted)}
+    label{font-weight:600;display:block;margin:8px 0 6px}
+    input[type="text"],input[type="file"],textarea{width:100%;background:#0b1220;border:1px solid #2a3441;color:var(--text);border-radius:10px;padding:10px}
+    table{border-collapse:collapse;width:100%;margin-top:12px}
+    th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left}
+    .muted{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="btn" href="../../">← Back to tools</a>
+    <h1 style="margin:10px 0 6px"><!-- TODO: Tool Name --> New Tool</h1>
+    <p class="muted" style="margin:0 0 12px">Short description of what this tool does. Keep it one sentence.</p>
+
+    <div class="card">
+      <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+        <div>
+          <label>Example input</label>
+          <input id="exampleInput" type="text" placeholder="type something…" />
+        </div>
+        <div>
+          <label>Optional file upload</label>
+          <input id="fileInput" type="file" />
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn primary" id="runBtn">Run</button>
+        <button class="btn" id="resetBtn">Reset</button>
+      </div>
+      <div id="error" style="color:#ef4444;margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 6px">Results</h3>
+      <div id="results" class="muted">No results yet.</div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 6px">How it works</h3>
+      <ol style="margin:8px 0 0 18px;line-height:1.6">
+        <li>Fill inputs (or upload a file)</li>
+        <li>Click <strong>Run</strong></li>
+        <li>See results / export</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    const qs = (id)=>document.getElementById(id);
+
+    qs('runBtn').onclick = async () => {
+      qs('error').textContent = '';
+      const text = qs('exampleInput').value.trim();
+      // const file = qs('fileInput').files[0]; // if you need files
+
+      if(!text){ qs('error').textContent = 'Please type something first.'; return; }
+
+      // TODO: Your tool logic here. Example below:
+      const out = text.toUpperCase();
+      qs('results').textContent = out;
+    };
+
+    qs('resetBtn').onclick = () => {
+      qs('exampleInput').value = '';
+      qs('fileInput').value = '';
+      qs('results').textContent = 'No results yet.';
+      qs('error').textContent = '';
+    };
+
+    // ===== Helpers for CSV/XLSX (uncomment scripts in <head> first) =====
+    async function readCsvOrXlsx(file){
+      return new Promise((resolve, reject)=>{
+        if(!file) return reject(new Error('No file'));
+        const ext=(file.name.split('.').pop()||'').toLowerCase();
+        if(ext==='csv'){
+          Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>resolve({rows:r.data,headers:r.meta.fields||[]}),error:reject});
+        } else if(ext==='xlsx'){
+          const fr=new FileReader();
+          fr.onload=e=>{ try{ const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{defval:''}); const headers=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[]; resolve({rows,headers}); } catch(err){ reject(err); } };
+          fr.onerror=reject; fr.readAsArrayBuffer(file);
+        } else {
+          reject(new Error('Unsupported file type (use .csv or .xlsx)'));
+        }
+      });
+    }
+  </script>
+</body>
+</html>

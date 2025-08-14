@@ -4,13 +4,26 @@
     "name": "Brand vs Non-Brand Aggregator",
     "desc": "Upload CSV/XLSX, detect brand via name + ASINs, see ACOS/ROAS by segment, and export per-term insights.",
     "tags": ["Amazon", "Search Term", "SP"],
-    "status": "live"
+    "status": "live",
+    "features": [
+      "Brand categorization for focused insights",
+      "Market penetration evaluation to gauge competition",
+      "Performance benchmarking across query types",
+      "Advertising budget optimization guided by results"
+    ],
+    "thumb": "assets/img/brand.png"
   },
   {
     "slug": "asin-performance",
     "name": "ASIN Performance Analyzer",
     "desc": "Merge Ad Console exports + Business Reports to estimate TACoS and contribution by ASIN.",
     "tags": ["Amazon", "ASIN"],
-    "status": "coming-soon"
+    "status": "coming-soon",
+    "features": [
+      "Combine Ad Console + Business Reports",
+      "Estimate TACoS per ASIN",
+      "Spot high-spend / low-return ASINs"
+    ],
+    "thumb": "assets/img/asin.png"
   }
 ]

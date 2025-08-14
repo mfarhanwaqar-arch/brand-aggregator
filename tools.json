@@ -20,4 +20,12 @@
     "tags": ["Amazon", "Keywords"],
     "status": "coming-soon"
   }
+  {
+  "slug": "asin-performance",
+  "name": "ASIN Performance Analyzer",
+  "desc": "Merge Ad Console exports + Business Reports to estimate TACoS and contribution by ASIN.",
+  "tags": ["Amazon", "ASIN"],
+  "status": "live"
+}
+
 ]

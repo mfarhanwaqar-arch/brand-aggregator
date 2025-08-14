@@ -62,6 +62,8 @@
   <script>
     const GH_USER='mfarhanwaqar-arch';
     const GH_REPO='brand-aggregator';
+    // Show developer-only controls (e.g., Code button) when ?dev=1 or localStorage dev=1
+    const DEV = (new URLSearchParams(location.search)).get('dev')==='1' || localStorage.getItem('dev')==='1';
 
     const grid=document.getElementById('grid');
     const q=document.getElementById('q');
@@ -94,7 +96,7 @@
         <div class="tags">${(t.tags||[]).map(x=>`<span class="tag">${x}</span>`).join('')}</div>
         <div class="actions">
           ${href?`<a class="btn primary" href="${href}">Open</a>`:`<button class="btn" disabled>Coming soon</button>`}
-          <a class="btn" target="_blank" rel="noopener" href="${code}">Code</a>
+          ${DEV ? `<a class="btn" target="_blank" rel="noopener" href="${code}">Code</a>` : ''}
         </div>
       </article>`;
     }

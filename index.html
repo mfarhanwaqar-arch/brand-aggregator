@@ -31,6 +31,9 @@
     .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px}
     .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
     .card h3{margin:6px 0;font-size:18px}
+    .card img.thumb{width:100%;height:120px;object-fit:cover;border-radius:12px;margin-bottom:10px;border:1px solid var(--line);background:#0b1220}
+    .features{margin:8px 0 0 18px;color:var(--muted);padding-left:0}
+    .features li{margin:4px 0}
     .pill{display:inline-block;border:1px solid #2a3441;background:#0b1220;border-radius:999px;padding:4px 8px;font-size:12px;color:var(--muted)}
     .tags{margin:8px 0;display:flex;gap:6px;flex-wrap:wrap}
     .tag{border:1px solid #2a3441;background:#0b1220;border-radius:999px;padding:2px 8px;font-size:11px;color:#a7b0be}
@@ -80,10 +83,14 @@
       const statusClass=t.status==='live'?'':'status-'+t.status;
       const href=live?`tools/${t.slug}/`:null;
       const code=`https://github.com/${GH_USER}/${GH_REPO}/tree/main/tools/${t.slug}`;
+      const features = Array.isArray(t.features) && t.features.length ? `<ul class="features">${t.features.map(f=>`<li>${f}</li>`).join('')}</ul>` : '';
+      const thumb = t.thumb ? `<img class="thumb" alt="${t.name}" src="${t.thumb}">` : '';
       return `<article class="card ${statusClass}">
+        ${thumb}
         <span class="pill">${statusLabel}</span>
         <h3>${t.name}</h3>
         <p class="muted">${t.desc||''}</p>
+        ${features}
         <div class="tags">${(t.tags||[]).map(x=>`<span class="tag">${x}</span>`).join('')}</div>
         <div class="actions">
           ${href?`<a class="btn primary" href="${href}">Open</a>`:`<button class="btn" disabled>Coming soon</button>`}

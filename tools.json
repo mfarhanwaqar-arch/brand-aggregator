@@ -1,0 +1,23 @@
+[
+  {
+    "slug": "brand-aggregator",
+    "name": "Brand vs Non-Brand Aggregator",
+    "desc": "Upload CSV/XLSX, detect brand via name + ASINs, see ACOS/ROAS by segment, and export per-term insights.",
+    "tags": ["Amazon", "Search Term", "SP"],
+    "status": "live"
+  },
+  {
+    "slug": "asin-performance",
+    "name": "ASIN Performance Analyzer",
+    "desc": "Merge Ad Console exports + Business Reports to estimate TACoS and contribution by ASIN.",
+    "tags": ["Amazon", "ASIN"],
+    "status": "coming-soon"
+  },
+  {
+    "slug": "keyword-harvest",
+    "name": "Keyword Harvest (ST Mining)",
+    "desc": "Mine converting queries from ST report and auto-build negatives & keyword candidates by match type.",
+    "tags": ["Amazon", "Keywords"],
+    "status": "coming-soon"
+  }
+]

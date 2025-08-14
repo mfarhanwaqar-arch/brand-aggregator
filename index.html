@@ -38,6 +38,9 @@
     .tags{margin:8px 0;display:flex;gap:6px;flex-wrap:wrap}
     .tag{border:1px solid #2a3441;background:#0b1220;border-radius:999px;padding:2px 8px;font-size:11px;color:#a7b0be}
     .actions{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .btn.ghost{background:transparent;border:1px dashed #2a3441}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0b1220;border:1px solid #2a3441;color:#e5e7eb;padding:10px 14px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.2s}
+    .toast.show{opacity:1}
     .status-coming-soon{opacity:.8}
     .status-private{opacity:.5}
     footer{margin:28px 0 10px;color:#a7b0be;font-size:12px}
@@ -97,6 +100,7 @@
         <div class="actions">
           ${href?`<a class="btn primary" href="${href}">Open</a>`:`<button class="btn" disabled>Coming soon</button>`}
           ${DEV ? `<a class="btn" target="_blank" rel="noopener" href="${code}">Code</a>` : ''}
+          ${href?`<button class="btn ghost" data-share="${t.slug}">Share</button>`:''}
         </div>
       </article>`;
     }
@@ -108,6 +112,7 @@
         return hay.includes(query);
       });
       grid.innerHTML=rows.map(card).join('');
+      attachShareHandlers();
     }
 
     (async()=>{
@@ -115,6 +120,23 @@
       render(tools);
       q.addEventListener('input',()=>render(tools));
     })();
+
+    function toast(msg){
+      let el=document.querySelector('.toast');
+      if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
+      el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1500);
+    }
+    function shareTool(slug){
+      const url=new URL(`tools/${slug}/`, location.href).href;
+      if(navigator.share){ navigator.share({title:'Ads Acceleration Tools', url}).catch(()=>{}); return; }
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(()=>toast('Link copied')).catch(()=>{ prompt('Copy this link', url); }); return; }
+      prompt('Copy this link', url);
+    }
+    function attachShareHandlers(){
+      document.querySelectorAll('[data-share]').forEach(btn=>{
+        btn.addEventListener('click',()=>shareTool(btn.dataset.share));
+      });
+    }
   </script>
 </body>
 </html>

@@ -15,13 +15,25 @@
     *{box-sizing:border-box}
     body{margin:0;background:linear-gradient(120deg,#0b0d10,#0f1720);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif}
     .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
-    a.btn,button.btn{appearance:none;border:1px solid #2a3441;background:#0b1220;color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;cursor:pointer}
+
+    a.btn,button.btn{
+      appearance:none;border:1px solid #344055;background:#0b1220;
+      color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;cursor:pointer
+    }
     .btn.primary{background:linear-gradient(135deg,var(--ac),var(--brand));border:none;color:#0b0d10}
     .btn.ghost{background:transparent;border:1px dashed #2a3441}
+
+    /* Dark, high-contrast toggle buttons for color bands */
+    .btn.toggle{background:#0b1220;border-color:#3c4a61}
+    .btn.toggle.active{background:#152033;border-color:#5b6b85;box-shadow:inset 0 0 0 1px #6a7a95}
+
     .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:12px}
     .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
     label{font-weight:600;display:block;margin:6px 0}
-    input[type="text"],input[type="file"],textarea,select{width:100%;background:#0b1220;border:1px solid #2a3441;color:var(--text);border-radius:10px;padding:10px}
+    input[type="text"],input[type="file"],textarea,select{
+      width:100%;background:#0b1220;border:1px solid #2a3441;color:var(--text);border-radius:10px;padding:10px
+    }
+
     table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed}
     th,td{border-bottom:1px solid var(--line);padding:10px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left;white-space:normal;overflow-wrap:anywhere}
@@ -65,9 +77,19 @@
     .cols-hint{color:var(--muted);font-size:11px;margin-top:6px}
 
     /* Hide BR/SP detected chips row under the table (not used) */
-    #tableCard .controls,
-    #tableCard .controls *,
-    #detectedBr,#detectedSp{display:none!important}
+    #tableCard .controls,#tableCard .controls *,#detectedBr,#detectedSp{display:none!important}
+
+    /* === Darker, higher-contrast metric color bands === */
+    td.heat-good{background:rgba(34,197,94,.28);border-left:3px solid rgba(34,197,94,.55)}
+    td.heat-ok{background:rgba(234,179,8,.28);border-left:3px solid rgba(234,179,8,.55)}
+    td.heat-bad{background:rgba(239,68,68,.28);border-left:3px solid rgba(239,68,68,.55)}
+
+    /* Legend (darker) */
+    .legend{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+    .legend .chip{border:1px solid #2a3441;background:#0b1220;border-radius:999px;padding:4px 8px;font-size:12px}
+    .legend .chip.good{background:rgba(34,197,94,.28);border-color:rgba(34,197,94,.55)}
+    .legend .chip.ok{background:rgba(234,179,8,.28);border-color:rgba(234,179,8,.55)}
+    .legend .chip.bad{background:rgba(239,68,68,.28);border-color:rgba(239,68,68,.55)}
   </style>
 </head>
 <body>
@@ -87,6 +109,7 @@
           <input id="spFile" type="file" accept=".csv,.xlsx,.xls" />
         </div>
       </div>
+
       <div class="controls" style="margin-top:10px">
         <button class="btn primary" id="processBtn">Process</button>
         <button class="btn" id="downloadSample">Download sample CSVs</button>
@@ -98,9 +121,19 @@
         </select>
 
         <input id="search" type="text" placeholder="Filter by ASIN, parent, title, or category…" style="flex:1;min-width:220px" />
+
+        <!-- Column picker -->
         <button class="btn" id="colsBtn">Columns</button>
+
+        <!-- Export -->
         <button class="btn ghost" id="exportBtn" disabled>Export CSV</button>
+
+        <!-- New darker color-band toggles -->
+        <button class="btn toggle active" id="bandConvBtn" aria-pressed="true" title="Toggle color bands for Ad Conv % and Org Conv %">Conv Bands</button>
+        <button class="btn toggle active" id="bandTacosBtn" aria-pressed="true" title="Toggle color bands for TACoS %">TACoS Bands</button>
+        <button class="btn toggle active" id="bandSpendBtn" aria-pressed="true" title="Toggle color bands for SP Spend">Spend Bands</button>
       </div>
+
       <div id="errors" class="bad" style="margin-top:6px"></div>
     </div>
 
@@ -114,10 +147,33 @@
       </div>
     </div>
 
+    <!-- New: mode-aware TACoS summary buckets -->
+    <div class="card" id="summaryCard" style="display:none">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="muted">Growth (< 5% TACoS)</div>
+          <div class="v" id="sumGrowthCount">0</div>
+          <div class="muted" id="sumGrowthList" style="font-size:12px;line-height:1.35;margin-top:6px"></div>
+        </div>
+        <div class="kpi">
+          <div class="muted">Maintenance (5–25% TACoS)</div>
+          <div class="v" id="sumMaintCount">0</div>
+          <div class="muted" id="sumMaintList" style="font-size:12px;line-height:1.35;margin-top:6px"></div>
+        </div>
+        <div class="kpi">
+          <div class="muted">High Risk (> 25% TACoS)</div>
+          <div class="v" id="sumRiskCount">0</div>
+          <div class="muted" id="sumRiskList" style="font-size:12px;line-height:1.35;margin-top:6px"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="card" id="tableCard" style="display:none">
-      <div class="controls" style="margin-bottom:8px">
-        <span class="muted" id="detectedBr"></span>
-        <span class="muted" id="detectedSp"></span>
+      <!-- Legend for color bands -->
+      <div class="legend" id="heatLegend">
+        <span class="chip good">Good</span>
+        <span class="chip ok">Okay</span>
+        <span class="chip bad">Needs attention</span>
       </div>
       <div id="tableOut"></div>
     </div>
@@ -131,10 +187,53 @@
   const num = (v)=>{ if(v===undefined||v===null||v==='') return 0; if(typeof v==='number') return v; return parseFloat(String(v).replace(/[^0-9.-]/g,''))||0; };
   const fmt0=(n)=> (n||0).toLocaleString();
   const fmt2=(n)=> (n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-  function truncateTitle(s, max = 60) {
-    const t = (s || '').trim();
-    if (!t) return '';
-    return t.length > max ? t.slice(0, max - 1) + '…' : t;
+  function truncateTitle(s, max = 60) { const t = (s || '').trim(); return t.length > max ? t.slice(0, max - 1) + '…' : t; }
+
+  // quantile helper for spend heat
+  function quantileSorted(arr,q){ if(!arr.length) return 0; const pos=(arr.length-1)*q; const base=Math.floor(pos); const rest=pos-base; const next=arr[base+1]; return next!==undefined? arr[base]+rest*(next-arr[base]) : arr[base]; }
+
+  // === Color-band thresholds (tune here) ===
+  const HEAT_RULES = {
+    // ACOS & ROAS (always active)
+    acos:   v => Num(v) <= 20 ? 'good' : (Num(v) <= 35 ? 'ok' : 'bad'),
+    roas:   v => Num(v) >= 4  ? 'good' : (Num(v) >= 2 ? 'ok' : 'bad'),
+
+    // Conversions (controlled by Conv toggle)
+    adConv: v => Num(v) >= 15 ? 'good' : (Num(v) >= 8 ? 'ok' : 'bad'),
+    orgConv:v => Num(v) >= 12 ? 'good' : (Num(v) >= 6 ? 'ok' : 'bad'),
+
+    // TACoS (controlled by TACoS toggle)
+    tacos:  v => Num(v) <= 12 ? 'good' : (Num(v) <= 20 ? 'ok' : 'bad')
+    // spend uses dynamic quantiles; handled separately
+  };
+  function Num(x){ return typeof x==='number' ? x : parseFloat(x)||0; }
+
+  // Band toggles
+  let BAND_CONV = true;   // affects adConv & orgConv
+  let BAND_TACOS = true;  // affects tacos
+  let BAND_SPEND = true;  // affects spend
+  function heatEnabledFor(key){
+    if(key==='adConv' || key==='orgConv') return BAND_CONV;
+    if(key==='tacos') return BAND_TACOS;
+    if(key==='spend') return BAND_SPEND;
+    return true; // ACOS/ROAS stay colored; change to false if you want them controlled too
+  }
+  function heatClassFor(key, rawValue){
+    if(!heatEnabledFor(key)) return '';
+    // Dynamic spend bands based on current (filtered) list
+    if(key==='spend' && window._spendBands){
+      const {q40,q80,min,max} = window._spendBands;
+      if(max===min) return '';
+      const v = Num(rawValue);
+      if(v<=q40) return 'heat-good';
+      if(v<=q80) return 'heat-ok';
+      return 'heat-bad';
+    }
+    const rule = HEAT_RULES[key];
+    if(!rule) return '';
+    const band = rule(rawValue);
+    if(!band) return '';
+    return band==='good' ? 'heat-good' : band==='ok' ? 'heat-ok' : 'heat-bad';
   }
 
   // ---------- Expected columns ----------
@@ -159,18 +258,11 @@
     spend:["Spend","Cost"],
     sales:["Sales","7 Day Total Sales"],
     orders:["Orders","7 Day Total Orders"],
-    units:["Units","7 Day Total Units"],
-    cpc:["CPC"],
-    acos:["ACOS"],
-    roas:["ROAS"]
+    units:["Units","7 Day Total Units"]
   };
 
   // Mapping expected headers
-  const MAP = {
-    parent:["Parent","Parent ASIN"],
-    child:["Child Asin","Child ASIN","ASIN"],
-    category:["Category Name","Category","Cat"]
-  };
+  const MAP = { parent:["Parent","Parent ASIN"], child:["Child Asin","Child ASIN","ASIN"], category:["Category Name","Category","Cat"] };
 
   // ---------- Readers ----------
   function findHeader(headers, candidates){
@@ -184,9 +276,7 @@
     }
     return '';
   }
-  function mapHeaders(headers, def){
-    const out={}; for(const k of Object.keys(def)){ out[k] = findHeader(headers, def[k]); } return out;
-  }
+  function mapHeaders(headers, def){ const out={}; for(const k of Object.keys(def)){ out[k] = findHeader(headers, def[k]); } return out; }
 
   function readCsv(file){
     return new Promise((resolve,reject)=>{
@@ -334,7 +424,7 @@
         o.units += num(r[brCols.units]);
         o.unitSession += num(r[brCols.unitSession]);
         o.brSales += num(r[brCols.sales]);
-        o.orders  += num(r[brCols.orders]); // BR Orders (Total Order Items)
+        o.orders  += num(r[brCols.orders]); // BR Orders
       }
 
       // Aggregate SP (child rows; only Product Ad rows if entity present)
@@ -357,7 +447,7 @@
 
       // Merge BR + SP by child ASIN, attach category + conversions
       const keys = Array.from(new Set([...Object.keys(brAgg), ...Object.keys(spAgg)])).sort();
-      const childRows = keys.map(k=>{
+      let childRows = keys.map(k=>{
         const b = brAgg[k]||{asin:k};
         const s = spAgg[k]||{};
         const impressions = s.impressions||0,
@@ -391,28 +481,27 @@
       });
 
       // ---- rollups
-      const parentRows  = rollupToParent(childRows, parentToCat);
-      const categoryRows= rollupToCategory(childRows);
+      let parentRows  = rollupToParent(childRows, parentToCat);
+      let categoryRows= rollupToCategory(childRows);
 
-      // KPIs
-      const totals = childRows.reduce((a,r)=>({
-        impressions:a.impressions+r.impressions,
-        clicks:a.clicks+r.clicks,
-        spend:a.spend+r.spend,
-        sSales:a.sSales+r.sSales,
-        sOrders:a.sOrders+r.sOrders,
-        sUnits:a.sUnits+r.sUnits,
-        brSales:a.brSales+r.brSales
-      }),{impressions:0,clicks:0,spend:0,sSales:0,sOrders:0,sUnits:0,brSales:0});
-      const kAcos = totals.sSales? totals.spend/totals.sSales*100 : 0;
-      const kTacos= totals.brSales? totals.spend/totals.brSales*100 : 0;
+      // KPIs on child set (global totals)
+      const totalsChild = computeTotals(childRows);
+      const kAcos = totalsChild.sSales? totalsChild.spend/totalsChild.sSales*100 : 0;
+      const kTacos= totalsChild.brSales? totalsChild.spend/totalsChild.brSales*100 : 0;
 
-      qs('kSpend').textContent = fmt2(totals.spend);
-      qs('kSpSales').textContent= fmt2(totals.sSales);
-      qs('kBrSales').textContent= fmt2(totals.brSales);
+      qs('kSpend').textContent = fmt2(totalsChild.spend);
+      qs('kSpSales').textContent= fmt2(totalsChild.sSales);
+      qs('kBrSales').textContent= fmt2(totalsChild.brSales);
       qs('kAcos').textContent   = fmt2(kAcos);
       qs('kTacos').textContent  = fmt2(kTacos);
       qs('kpiCard').style.display='block';
+
+      // Add % of total Sales/Spend for each mode
+      const totalsParent   = computeTotals(parentRows);
+      const totalsCategory = computeTotals(categoryRows);
+      childRows    = addShares(childRows, totalsChild);
+      parentRows   = addShares(parentRows, totalsParent);
+      categoryRows = addShares(categoryRows, totalsCategory);
 
       // cache + initial render
       window._rowsChild = childRows;
@@ -433,6 +522,26 @@
       console.error(err);
       qs('errors').textContent = err.message || String(err);
     }
+  }
+
+  // ---- totals & shares helpers
+  function computeTotals(rows){
+    return rows.reduce((a,r)=>({
+      impressions:a.impressions+(r.impressions||0),
+      clicks:a.clicks+(r.clicks||0),
+      spend:a.spend+(r.spend||0),
+      sSales:a.sSales+(r.sSales||0),
+      sOrders:a.sOrders+(r.sOrders||0),
+      sUnits:a.sUnits+(r.sUnits||0),
+      brSales:a.brSales+(r.brSales||0)
+    }),{impressions:0,clicks:0,spend:0,sSales:0,sOrders:0,sUnits:0,brSales:0});
+  }
+  function addShares(rows, totals){
+    return rows.map(r=>({
+      ...r,
+      brSalesShare: totals.brSales ? (r.brSales / totals.brSales * 100) : 0,
+      spendShare:   totals.spend   ? (r.spend   / totals.spend   * 100) : 0
+    }));
   }
 
   // ---- rollup: Parent (with auto-generated truncated title)
@@ -472,10 +581,7 @@
       const tacos  = m.brSales? (m.spend/m.brSales*100):0;
 
       return {
-        parent:m.parent,
-        title:t,
-        category:m.category,
-        childCount:m.childSet.size,
+        parent:m.parent, title:t, category:m.category, childCount:m.childSet.size,
         brSales:m.brSales, brOrders:m.brOrders,
         sessions:m.sessions, pageviews:m.pageviews, units:m.units,
         impressions:m.impressions, clicks:m.clicks, spend:m.spend,
@@ -507,8 +613,7 @@
       const adConv = m.clicks ? (m.sOrders/m.clicks*100) : 0;
       const orgConv= m.sessions ? (m.brOrders/m.sessions*100) : 0;
       const acos   = m.sSales? (m.spend/m.sSales*100):0;
-      const roas   = m.spend? (m.sales/m.spend): (m.spend? (m.sSales/m.spend):0);
-      const roas2  = m.spend? (m.sSales/m.spend): 0;
+      const roas   = m.spend? (m.sSales/m.spend):0;
       const tacos  = m.brSales? (m.spend/m.brSales*100):0;
       return {
         category:m.category,
@@ -516,7 +621,7 @@
         sessions:m.sessions, pageviews:m.pageviews, units:m.units,
         impressions:m.impressions, clicks:m.clicks, spend:m.spend,
         sSales:m.sSales, sOrders:m.sOrders, sUnits:m.sUnits,
-        adConv, orgConv, acos, roas:roas2, tacos
+        adConv, orgConv, acos, roas, tacos
       };
     });
   }
@@ -529,13 +634,15 @@
       {key:'category',label:'Category'},
       {key:'title',label:'Title',class:'title'},
       {key:'brSales',label:'BR Sales',fmt:'2'},
-      {key:'brOrders',label:'BR Orders',fmt:'0'},          <!-- New -->
+      {key:'brSalesShare',label:'% of Total Sales',fmt:'2',pct:true},
+      {key:'brOrders',label:'BR Orders',fmt:'0'},
       {key:'sessions',label:'BR Sessions',fmt:'0'},
       {key:'spend',label:'SP Spend',fmt:'2'},
+      {key:'spendShare',label:'% of Total Spend',fmt:'2',pct:true},
       {key:'sSales',label:'SP Sales',fmt:'2'},
       {key:'sOrders',label:'SP Orders',fmt:'0'},
-      {key:'adConv',label:'Ad Conv %',fmt:'2'},            <!-- New -->
-      {key:'orgConv',label:'Org Conv %',fmt:'2'},          <!-- New -->
+      {key:'adConv',label:'Ad Conv %',fmt:'2'},
+      {key:'orgConv',label:'Org Conv %',fmt:'2'},
       {key:'acos',label:'ACOS %',fmt:'2'},
       {key:'roas',label:'ROAS',fmt:'2'},
       {key:'tacos',label:'TACoS %',fmt:'2'}
@@ -546,13 +653,15 @@
       {key:'title',label:'Title',class:'title'},
       {key:'childCount',label:'# Children',fmt:'0'},
       {key:'brSales',label:'BR Sales',fmt:'2'},
-      {key:'brOrders',label:'BR Orders',fmt:'0'},          <!-- New -->
+      {key:'brSalesShare',label:'% of Total Sales',fmt:'2',pct:true},
+      {key:'brOrders',label:'BR Orders',fmt:'0'},
       {key:'sessions',label:'BR Sessions',fmt:'0'},
       {key:'spend',label:'SP Spend',fmt:'2'},
+      {key:'spendShare',label:'% of Total Spend',fmt:'2',pct:true},
       {key:'sSales',label:'SP Sales',fmt:'2'},
       {key:'sOrders',label:'SP Orders',fmt:'0'},
-      {key:'adConv',label:'Ad Conv %',fmt:'2'},            <!-- New -->
-      {key:'orgConv',label:'Org Conv %',fmt:'2'},          <!-- New -->
+      {key:'adConv',label:'Ad Conv %',fmt:'2'},
+      {key:'orgConv',label:'Org Conv %',fmt:'2'},
       {key:'acos',label:'ACOS %',fmt:'2'},
       {key:'roas',label:'ROAS',fmt:'2'},
       {key:'tacos',label:'TACoS %',fmt:'2'}
@@ -560,13 +669,15 @@
     category:[
       {key:'category',label:'Category'},
       {key:'brSales',label:'BR Sales',fmt:'2'},
-      {key:'brOrders',label:'BR Orders',fmt:'0'},          <!-- New -->
+      {key:'brSalesShare',label:'% of Total Sales',fmt:'2',pct:true},
+      {key:'brOrders',label:'BR Orders',fmt:'0'},
       {key:'sessions',label:'BR Sessions',fmt:'0'},
       {key:'spend',label:'SP Spend',fmt:'2'},
+      {key:'spendShare',label:'% of Total Spend',fmt:'2',pct:true},
       {key:'sSales',label:'SP Sales',fmt:'2'},
       {key:'sOrders',label:'SP Orders',fmt:'0'},
-      {key:'adConv',label:'Ad Conv %',fmt:'2'},            <!-- New -->
-      {key:'orgConv',label:'Org Conv %',fmt:'2'},          <!-- New -->
+      {key:'adConv',label:'Ad Conv %',fmt:'2'},
+      {key:'orgConv',label:'Org Conv %',fmt:'2'},
       {key:'acos',label:'ACOS %',fmt:'2'},
       {key:'roas',label:'ROAS',fmt:'2'},
       {key:'tacos',label:'TACoS %',fmt:'2'}
@@ -574,11 +685,7 @@
   };
 
   // Title is toggleable; keep essential IDs minimal
-  const ESSENTIAL = {
-    child:['asin','parent'],
-    parent:['parent'],
-    category:['category']
-  };
+  const ESSENTIAL = { child:['asin','parent'], parent:['parent'], category:['category'] };
 
   function getVisibleCols(mode){
     if(mode==='parent') return (window._visibleParent ||= COLS.parent.map(c=>c.key));
@@ -644,7 +751,7 @@
     const numeric = new Set([
       'childCount','brSales','brOrders','units','sessions','pageviews',
       'impressions','clicks','spend','sSales','sOrders','sUnits',
-      'adConv','orgConv','acos','cpc','roas','tacos','buybox','unitSession'
+      'adConv','orgConv','acos','cpc','roas','tacos','buybox','unitSession','brSalesShare','spendShare'
     ]);
     const key = s.key; const dir = s.dir==='asc'?'asc':'desc';
     const arr = list.slice();
@@ -675,6 +782,63 @@
   function getColFilters(mode){ return (window._colFilters ||= {[mode]:{}})[mode] ||= {}; }
   function setColFilters(mode, ft){ (window._colFilters ||= {})[mode] = ft; }
 
+// === Numeric filter helpers ===
+const NUMERIC_KEYS = new Set([
+  'childCount','brSales','brOrders','units','sessions','pageviews',
+  'impressions','clicks','spend','sSales','sOrders','sUnits',
+  'adConv','orgConv','acos','roas','tacos','buybox','unitSession',
+  'brSalesShare','spendShare'
+]);
+function isNumericColumn(key){ return NUMERIC_KEYS.has(key); }
+function parseNum(x){
+  if(x==null) return 0;
+  return typeof x==='number' ? x : parseFloat(String(x).replace(/[^0-9.-]/g,''))||0;
+}
+// Supports: >x, >=x, <x, <=x, =x, ==x, !=x, a-b (inclusive). Optional trailing %.
+function matchNumeric(value, expr){
+  const v = parseNum(value);
+  let e = String(expr).trim();
+  if(!e) return true;
+  e = e.replace(/\s+/g,'');
+  if(e.endsWith('%')) e = e.slice(0,-1);
+  const mRange = e.match(/^(-?\d+(?:\.\d+)?)\-(-?\d+(?:\.\d+)?)$/);
+  if(mRange){
+    const a = parseFloat(mRange[1]), b = parseFloat(mRange[2]);
+    return v >= Math.min(a,b) && v <= Math.max(a,b);
+  }
+  const mOp = e.match(/^(<=|>=|<|>|==|=|!=)(-?\d+(?:\.\d+)?)$/);
+  if(mOp){
+    const op = mOp[1], n = parseFloat(mOp[2]);
+    if(op==='>')  return v>n;
+    if(op==='<')  return v<n;
+    if(op==='>=') return v>=n;
+    if(op==='<=') return v<=n;
+    if(op==='='||op==='==') return v===n;
+    if(op==='!=') return v!==n;
+  }
+  const n = parseFloat(e);
+  if(!Number.isNaN(n)) return Math.abs(v-n) < 1e-9;
+  return false;
+}
+
+  function updateSummary(list, mode){
+    const id = (r)=> mode==='child' ? r.asin : (mode==='parent' ? r.parent : r.category);
+    const growth = [], maint = [], risk = [];
+    for(const r of list){
+      if((r.tacos||0) < 5) growth.push(r);
+      else if((r.tacos||0) > 25) risk.push(r);
+      else maint.push(r);
+    }
+    const topN = (arr)=> arr.sort((a,b)=> (b.brSales||0) - (a.brSales||0)).slice(0,5).map(x=> `${id(x)} — ${fmt2(x.tacos||0)}% TACoS`).join('<br>');
+    qs('sumGrowthCount').textContent = growth.length;
+    qs('sumMaintCount').textContent  = maint.length;
+    qs('sumRiskCount').textContent   = risk.length;
+    qs('sumGrowthList').innerHTML = growth.length? topN(growth) : '<span class="muted">—</span>';
+    qs('sumMaintList').innerHTML  = maint.length?  topN(maint)  : '<span class="muted">—</span>';
+    qs('sumRiskList').innerHTML   = risk.length?   topN(risk)   : '<span class="muted">—</span>';
+    qs('summaryCard').style.display='block';
+  }
+
   function renderTable(rows, mode='child'){
     const qv = (qs('search').value||'').trim().toLowerCase();
 
@@ -683,23 +847,41 @@
     window._lastColsUsed = cols;
 
     const filters = getColFilters(mode);
-    const filtered = rows.filter(r=>{
-      if(qv){
-        const hay = [r.asin, r.parent, r.title, r.category].filter(Boolean).join(' ').toLowerCase();
-        if(!hay.includes(qv)) return false;
-      }
-      for(const c of cols){
-        const f = (filters[c.key]||'').trim();
-        if(!f) continue;
-        const v = r[c.key];
-        const vs = (v==null?'':String(v)).toLowerCase();
-        if(!vs.includes(f.toLowerCase())) return false;
-      }
-      return true;
-    });
+   const filtered = rows.filter(r=>{
+  if(qv){
+    const hay = [r.asin, r.parent, r.title, r.category].filter(Boolean).join(' ').toLowerCase();
+    if(!hay.includes(qv)) return false;
+  }
+  for(const c of cols){
+    const f = (filters[c.key]||'').trim();
+    if(!f) continue;
+    const v = r[c.key];
+    if(isNumericColumn(c.key)){
+      if(!matchNumeric(v, f)) return false;
+    }else{
+      const vs = (v==null?'':String(v)).toLowerCase();
+      if(!vs.includes(f.toLowerCase())) return false;
+    }
+  }
+  return true;
+});
+
+
+    // Compute spend quantiles for dynamic heat (on the filtered slice)
+    const spendVals = filtered.map(r=> Number(r.spend)||0 ).filter(v=> v>=0 ).sort((a,b)=>a-b);
+    if(spendVals.length>=3){
+      const q40 = quantileSorted(spendVals,0.40);
+      const q80 = quantileSorted(spendVals,0.80);
+      window._spendBands = {q40,q80,min:spendVals[0],max:spendVals[spendVals.length-1]};
+    } else {
+      window._spendBands = null;
+    }
 
     const list = sortList(filtered);
     window._rendered = list;
+
+    // Update TACoS summary block (mode-aware, after filters/search)
+    updateSummary(list, mode);
 
     const headTop = `<tr>` + cols.map(c=>{
       const sorted = (window._sort && window._sort.key===c.key) ? ('sorted-'+window._sort.dir) : '';
@@ -707,17 +889,25 @@
     }).join('') + `</tr>`;
 
     const headFilters = `<tr class="filters">` + cols.map(c=>{
-      const val = (filters[c.key]||'');
-      return `<th><input class="col-filter" data-key="${c.key}" value="${val}" placeholder="filter…"></th>`;
-    }).join('') + `</tr>`;
+  const val = (filters[c.key]||'');
+  const ph  = isNumericColumn(c.key) ? '>, >=, <, <=, =, 10-20' : 'filter…';
+  return `<th><input class="col-filter" data-key="${c.key}" value="${val}" placeholder="${ph}" title="${ph}"></th>`;
+}).join('') + `</tr>`;
+
 
     const head = `<table><thead>${headTop}${headFilters}</thead><tbody>`;
 
     const body = list.map(r=> `<tr>` +
       cols.map(c=>{
-        let v = r[c.key];
-        if(c.fmt==='2') v = fmt2(v); else if(c.fmt==='0') v = fmt0(v); else v = (v??'');
-        return `<td class="${c.class||''}">${v}</td>`;
+        const raw = r[c.key]; // keep raw for heat banding
+        let v = raw;
+        if(c.pct) v = `${fmt2(raw)} %`;
+        else if(c.fmt==='2') v = fmt2(raw);
+        else if(c.fmt==='0') v = fmt0(raw);
+        else v = (raw ?? '');
+        const heat = heatClassFor(c.key, raw);
+        const cls = [c.class||'', heat].filter(Boolean).join(' ');
+        return `<td class="${cls}">${v}</td>`;
       }).join('') + `</tr>`
     ).join('');
 
@@ -743,6 +933,7 @@
     const header = useCols.map(c => c.label);
     const data = rows.map(r => useCols.map(c => {
       let v = r[c.key];
+      if (c.pct) return Number(v || 0).toFixed(2) + '%';
       if (c.fmt === '2') return Number(v || 0).toFixed(2);
       if (c.fmt === '0') return String(fmt0(v)).replace(/,/g, '');
       return v == null ? '' : String(v);
@@ -803,6 +994,25 @@
     }
   });
 
+  // New: color band toggles (Conv/TACoS/Spend)
+  function updateToggle(btn, on){ btn.classList.toggle('active', on); btn.setAttribute('aria-pressed', String(on)); }
+  const bandConvBtn = qs('bandConvBtn');
+  const bandTacosBtn = qs('bandTacosBtn');
+  const bandSpendBtn = qs('bandSpendBtn');
+  bandConvBtn.addEventListener('click', ()=>{
+    BAND_CONV = !BAND_CONV; updateToggle(bandConvBtn, BAND_CONV);
+    if(window._rows){ renderTable(window._rows, qs('groupMode').value); }
+  });
+  bandTacosBtn.addEventListener('click', ()=>{
+    BAND_TACOS = !BAND_TACOS; updateToggle(bandTacosBtn, BAND_TACOS);
+    if(window._rows){ renderTable(window._rows, qs('groupMode').value); }
+  });
+  bandSpendBtn.addEventListener('click', ()=>{
+    BAND_SPEND = !BAND_SPEND; updateToggle(bandSpendBtn, BAND_SPEND);
+    if(window._rows){ renderTable(window._rows, qs('groupMode').value); }
+  });
+
+  // Samples
   qs('downloadSample').addEventListener('click', ()=>{
     const br = `Child ASIN,Parent ASIN,Title,Sessions - Total,Page Views - Total,Featured Offer (Buy Box) Percentage,Units Ordered,Unit Session Percentage,Ordered Product Sales,Total Order Items
 B00AAA111,PARENT1,Sample Product A,100,250,85,10,10,500,12

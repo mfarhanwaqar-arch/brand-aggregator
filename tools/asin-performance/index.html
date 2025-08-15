@@ -46,21 +46,21 @@
     .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0b1220;border:1px solid #2a3441;color:#e5e7eb;padding:10px 14px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.2s}
     .toast.show{opacity:1}
-      /* === Visibility tweaks (make metrics clear, shorten title) === */
+    /* === Visibility tweaks (make metrics clear, shorten title) === */
     th.title{width:220px!important}
     td.title{max-width:220px!important;-webkit-line-clamp:1!important}
     th{white-space:normal!important}
     td{white-space:nowrap!important}
     td.num{font-variant-numeric:tabular-nums;font-size:13px}
-      /* compact table header so columns take less space */
+    /* compact table header so columns take less space */
     thead th{font-size:11px;line-height:1.1;padding:6px 8px}
     /* keep data rows readable */
     tbody td{padding:8px 10px}
-      /* sorting indicators */
+    /* sorting indicators */
     th.sortable{cursor:pointer;user-select:none}
     th.sorted-asc::after{content:' ▲';font-size:10px;opacity:.7}
     th.sorted-desc::after{content:' ▼';font-size:10px;opacity:.7}
-      /* columns panel */
+    /* columns panel */
     .cols-panel{position:fixed;right:24px;top:140px;background:#0b1220;border:1px solid #2a3441;border-radius:12px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.35);max-height:60vh;overflow:auto;display:none;min-width:260px}
     .cols-panel h4{margin:6px 0 8px;font-size:13px}
     .cols-list{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -68,8 +68,14 @@
     .cols-actions{display:flex;gap:8px;margin-top:8px}
     .cols-actions .btn{padding:6px 10px;font-weight:600}
     .cols-hint{color:var(--muted);font-size:11px;margin-top:6px}
-      /* ensure the columns panel floats above the table */
+    /* ensure the columns panel floats above the table */
     .cols-panel{z-index:9999}
+
+    /* Hide (belt-and-suspenders) any BR/SP chips row if present */
+    #tableCard .controls,
+    #tableCard .controls *,
+    #detectedBr,
+    #detectedSp { display: none !important; }
   </style>
 </head>
 <body>
@@ -83,12 +89,10 @@
         <div>
           <label>Business Report (.csv or .xlsx)</label>
           <input id="brFile" type="file" accept=".csv,.xlsx,.xls" />
-          <div id="brCols" class="muted" style="margin-top:6px"></div>
         </div>
         <div>
           <label>Sponsored Products Report (.csv or .xlsx)</label>
           <input id="spFile" type="file" accept=".csv,.xlsx,.xls" />
-          <div id="spCols" class="muted" style="margin-top:6px"></div>
         </div>
       </div>
       <div class="controls" style="margin-top:10px">
@@ -116,10 +120,7 @@
     </div>
 
     <div class="card" id="tableCard" style="display:none">
-      <div class="controls" style="margin-bottom:8px">
-        <span class="pill" id="detectedBr"></span>
-        <span class="pill" id="detectedSp"></span>
-      </div>
+      <!-- chips row removed -->
       <div id="tableOut"></div>
     </div>
   </div>
@@ -135,8 +136,6 @@
   const fmt2=(n)=> (n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 
   function toast(msg){const el=qs('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1200);}
-
-  function badgeList(el, title, arr){ el.innerHTML = arr && arr.length ? `<span class="badge">${title}:</span>`+arr.map(x=>`<span class="badge">${x}</span>`).join(' ') : '' }
 
   // Read CSV or XLSX to rows + headers
   function readFile(file){
@@ -242,11 +241,9 @@
       const brCols = mapHeaders(BRdata.headers, BR);
       const spCols = mapHeaders(SPdata.headers, SP);
 
-      badgeList(qs('detectedBr'),'BR', [BRdata.sheet?`Sheet: ${BRdata.sheet}`:null, ...Object.values(brCols)].filter(Boolean));
-      badgeList(qs('detectedSp'),'SP', [SPdata.sheet?`Sheet: ${SPdata.sheet}`:null, ...Object.values(spCols)].filter(Boolean));
-
-      qs('brCols').textContent = 'Detected: ' + Object.values(brCols).filter(Boolean).join(' • ');
-      qs('spCols').textContent = 'Detected: ' + Object.values(spCols).filter(Boolean).join(' • ');
+      // Chips were removed; do not populate
+      // badgeList(qs('detectedBr'),'BR', [BRdata.sheet?`Sheet: ${BRdata.sheet}`:null, ...Object.values(brCols)].filter(Boolean));
+      // badgeList(qs('detectedSp'),'SP', [SPdata.sheet?`Sheet: ${SPdata.sheet}`:null, ...Object.values(spCols)].filter(Boolean));
 
       if(!brCols.child || !brCols.sales){ throw new Error('Business Report missing required columns (ASIN and Ordered Product Sales).'); }
       if(!spCols.asin || !spCols.spend){ throw new Error('Sponsored Products missing required columns (ASIN and Spend).'); }
@@ -261,7 +258,7 @@
         o.title = o.title || String(r[brCols.title]||'').trim();
         o.sessions += num(r[brCols.sessions]);
         o.pageviews += num(r[brCols.pageviews]);
-        o.buybox += num(r[brCols.buybox]); // if multi-rows per ASIN, this is simplistic; acceptable for quick view
+        o.buybox += num(r[brCols.buybox]);
         o.units += num(r[brCols.units]);
         o.unitSession += num(r[brCols.unitSession]);
         o.brSales += num(r[brCols.sales]);
@@ -271,7 +268,6 @@
       // Aggregate SP by ASIN
       const spAgg = {};
       for(const r of SPdata.rows){
-        // Only keep Product Ad rows when Entity is present
         if (spCols.entity) {
           const ent = String(r[spCols.entity]||'').trim().toLowerCase();
           if (ent && !(ent.includes('product') && ent.includes('ad'))) continue;
@@ -408,7 +404,8 @@
   };
 
   // --- Visible columns state + panel ---
-  const ESSENTIAL = { parent:['parent','title'], child:['asin','parent','title'] };
+  // Title is toggleable (not essential)
+  const ESSENTIAL = { parent:['parent'], child:['asin','parent'] };
   function getVisibleCols(mode){
     if(mode==='parent') return (window._visibleParent ||= COLS.parent.map(c=>c.key));
     return (window._visibleChild ||= COLS.child.map(c=>c.key));
@@ -437,7 +434,6 @@
       cb.addEventListener('change', ()=>{
         const cur = new Set(getVisibleCols(mode));
         if(cb.checked) cur.add(cb.dataset.key); else cur.delete(cb.dataset.key);
-        // ensure essentials remain
         ESSENTIAL[mode].forEach(k=>cur.add(k));
         setVisibleCols(mode, Array.from(cur));
         if(window._rows){ renderTable(window._rows, mode); }
@@ -456,7 +452,6 @@
   }
   function toggleColsPanel(){
     const panel = document.getElementById('colsPanel');
-    // Build once if empty so the panel always opens with content
     if(!panel.innerHTML.trim()){
       const mode = qs('groupMode').value;
       buildColsPanel(mode);
@@ -486,7 +481,7 @@
     ths.forEach(th=>{
       const key = th.getAttribute('data-key'); if(!key) return;
       th.addEventListener('click', (e)=>{
-        if(e.target.classList.contains('col-resize-handle')) return; // ignore resize handle
+        if(e.target.classList.contains('col-resize-handle')) return;
         const cur = window._sort||{}; let dir = 'desc';
         if(cur.key===key && cur.dir==='desc') dir='asc';
         window._sort = {key, dir, mode};
@@ -502,13 +497,12 @@
       return r.asin.toLowerCase().includes(qv) || (r.title||'').toLowerCase().includes(qv);
     }) : rows;
 
-    // apply visible columns selection
     let visible = getVisibleCols(mode).slice();
     ESSENTIAL[mode].forEach(k=>{ if(!visible.includes(k)) visible.push(k); });
     const cols = COLS[mode].filter(c=> visible.includes(c.key));
     window._lastColsUsed = cols;
     const list = sortList(filtered);
-    window._rendered = list; // for export
+    window._rendered = list;
 
     const head = `<table><thead><tr>` +
       cols.map(c=>{
@@ -531,7 +525,6 @@
     enableHeaderSort(qs('tableOut'), mode);
     qs('tableCard').style.display='block';
 
-    // make Export CSV reflect current sort
     qs('exportBtn').onclick = ()=> exportCsv(window._rendered||list, mode, window._lastColsUsed);
   }
 
@@ -552,7 +545,7 @@
       const cvr = m.clicks? (m.sOrders/m.clicks*100):0;
       const cpc = m.clicks? (m.spend/m.clicks):0;
       const acos = m.sSales? (m.spend/m.sSales*100):0;
-      const roas = m.spend? (m.sSales/m.spend):0;
+      const roas = m.spend? (m.sales/m.spend):0;
       const tacos = m.brSales? (m.spend/m.brSales*100):0;
       return {parent:m.parent, title:m.title, childCount:m.childSet.size,
         brSales:m.brSales, brOrders:m.brOrders,
@@ -563,37 +556,32 @@
     });
   }
 
+  function exportCsv(rows, mode='child', cols){
+    const useCols = cols && cols.length ? cols : COLS[mode];
+    const header = useCols.map(c => c.label);
 
-function exportCsv(rows, mode='child', cols){
-  const useCols = cols && cols.length ? cols : COLS[mode];
-  const header = useCols.map(c => c.label);
+    const data = rows.map(r => useCols.map(c => {
+      let v = r[c.key];
+      if (c.fmt === '2') return Number(v || 0).toFixed(2);
+      if (c.fmt === '0') return String(fmt0(v)).replace(/,/g, '');
+      return v == null ? '' : String(v);
+    }));
 
-  const data = rows.map(r => useCols.map(c => {
-    let v = r[c.key];
-    if (c.fmt === '2') return Number(v || 0).toFixed(2);
-    if (c.fmt === '0') return String(fmt0(v)).replace(/,/g, '');
-    return v == null ? '' : String(v);
-  }));
+    const escapeCell = v =>
+      (typeof v === 'string' && /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v);
 
-  // Must be one line; the broken version had a newline inside the regex
-  const escapeCell = v =>
-    (typeof v === 'string' && /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v);
+    const csv = [header, ...data]
+      .map(row => row.map(escapeCell).join(','))
+      .join('\n');
 
-  // Must be one line; the broken version had .join('  <newline>  ')
-  const csv = [header, ...data]
-    .map(row => row.map(escapeCell).join(','))
-    .join('\n');
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'asin-performance.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'asin-performance.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 
   // events
   qs('processBtn').addEventListener('click', process);
@@ -613,17 +601,12 @@ function exportCsv(rows, mode='child', cols){
     buildColsPanel(mode);
     toggleColsPanel();
   });
-  // enable Columns even before processing and prebuild panel
   setTimeout(()=>{ try{ qs('colsBtn').disabled = false; buildColsPanel(qs('groupMode').value); }catch(e){} }, 0);
   qs('search').addEventListener('input', ()=>{
-    const table = qs('tableOut'); if(table.innerHTML.trim()){
-      // naive: re-render last computed rows? For simplicity, call process again would re-parse files (slow).
-      // Instead, cache rows in window._rows when processing.
-      if(window._rows){ const mode=qs('groupMode').value; renderTable(window._rows, mode);} 
-    }
+    if(window._rows){ const mode=qs('groupMode').value; renderTable(window._rows, mode); }
   });
 
-    // sample CSVs
+  // sample CSVs
   qs('downloadSample').addEventListener('click', ()=>{
     const br = `Child ASIN,Parent ASIN,Title,Sessions - Total,Page Views - Total,Featured Offer (Buy Box) Percentage,Units Ordered,Unit Session Percentage,Ordered Product Sales,Total Order Items
 B00AAA111,PARENT1,Sample Product A,100,250,85,10,10,500,12

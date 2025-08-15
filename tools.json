@@ -18,7 +18,7 @@
     "name": "ASIN Performance Analyzer",
     "desc": "Merge Ad Console exports + Business Reports to estimate TACoS and contribution by ASIN.",
     "tags": ["Amazon", "ASIN"],
-    "status": "coming-soon",
+    "status": "live",
     "features": [
       "Combine Ad Console + Business Reports",
       "Estimate TACoS per ASIN",

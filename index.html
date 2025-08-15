@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unlock • Brand Aggregator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b0d10;--panel:#11151a;--muted:#a7b0be;--text:#e6e7eb;--accent:#5b8cfa;--accent2:#86efac;--r:16px}
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);
+      background:radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%),linear-gradient(180deg,#0b0d10 0%,#090b0f 100%);
+      display:grid;place-items:center}
+    .card{width:min(720px,92vw);background:linear-gradient(180deg,#121720 0%,#0f141c 100%);
+      border:1px solid #1f2937;border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+    .bar{height:64px;display:flex;align-items:center;padding:0 22px;border-bottom:1px solid #1f2937;background:#0e131b;border-top-left-radius:var(--r);border-top-right-radius:var(--r)}
+    .brand{display:flex;gap:10px;align-items:center;font-weight:700}
+    .badge{padding:3px 8px;border-radius:999px;font-size:12px;font-weight:600;color:#0b1020;background:var(--accent2)}
+    .wrap{padding:40px clamp(18px,3.3vw,40px) 46px;text-align:center}
+    h1{margin:8px 0 10px;font-size:clamp(20px,2.4vw,28px)} p.sub{margin:0 auto 28px;color:var(--muted);max-width:56ch}
+    form{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+    input[type=email]{width:min(440px,80vw);background:#0b0f16;border:1px solid #223049;color:var(--text);padding:14px;border-radius:12px;font-size:15px}
+    input[type=email]::placeholder{color:#7b8798}
+    .btn{cursor:pointer;border:0;border-radius:12px;padding:14px 18px;font-weight:700;font-size:15px;background:var(--accent);color:#081222}
+    .hint{margin-top:14px;color:#8b97a8;font-size:13px}.error{color:#fecaca;font-weight:600}.success{color:#bbf7d0;font-weight:600}
+    .hidden{display:none}.kbd{border:1px solid #334155;border-bottom-width:2px;border-radius:6px;padding:2px 6px;font:12px ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace}
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-labelledby="title">
+    <div class="bar">
+      <div class="brand">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 12a8 8 0 1 1 16 0v6a2 2 0 0 1-2 2h-2v-6h2v-2a6 6 0 1 0-12 0v2h2v6H6a2 2 0 0 1-2-2v-6Z" fill="#5b8cfa"/>
+        </svg>
+        <span>ads<span style="opacity:.7">crafted</span></span>
+        <span class="badge">Access</span>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <h1 id="title">Enter your email to access Brand Aggregator</h1>
+      <p class="sub">Data-backed PPC + organic tactics. No spam. Unsubscribe anytime.</p>
+
+      <form id="gateForm" novalidate>
+        <input type="text" name="company" id="company" class="hidden" tabindex="-1" autocomplete="off" />
+        <input id="email" name="email" type="email" inputmode="email" placeholder="Enter your email" autocomplete="email" required />
+        <button class="btn" id="goBtn" type="submit">Continue</button>
+      </form>
+
+      <div class="hint" id="msg" role="status" aria-live="polite"></div>
+      <div class="hint">Owner shortcut: <span class="kbd">Alt</span>+<span class="kbd">S</span> to skip.</div>
+    </div>
+  </main>
+
+  <script>
+    // Send to your actual app inside this folder
+    const TARGET_URL = "./app.html"; // <- your previous index.html (renamed)
+    const FORMSPREE_ENDPOINT = "https://formspree.io/f/REPLACE_ME"; // optional
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+    const storeKey = "ac_email";
+    const params = new URLSearchParams(location.search);
+
+    // Auto-skip if already collected or ?skipGate=1
+    if (params.get("skipGate")==="1" || localStorage.getItem(storeKey)) {
+      location.replace(TARGET_URL);
+    }
+
+    // Alt+S owner bypass
+    addEventListener("keydown", e => {
+      if (e.altKey && (e.key === "s" || e.key === "S")) location.replace(TARGET_URL);
+    });
+
+    document.getElementById("gateForm").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const msg = document.getElementById("msg");
+      msg.textContent = "";
+      const email = document.getElementById("email").value.trim();
+      const honey = document.getElementById("company").value.trim();
+      if (honey) return; // bot trap
+      if (!emailRegex.test(email)) { msg.textContent = "Please enter a valid email."; msg.className="hint error"; return; }
+
+      localStorage.setItem(storeKey, email);
+
+      if (FORMSPREE_ENDPOINT && FORMSPREE_ENDPOINT.includes("/f/")) {
+        try {
+          const res = await fetch(FORMSPREE_ENDPOINT, {
+            method:"POST",
+            headers:{ "Accept":"application/json","Content-Type":"application/json" },
+            body: JSON.stringify({ email, source:"brand-aggregator", ts:new Date().toISOString() })
+          });
+          if (!res.ok) console.warn("Form submit failed", res.status);
+        } catch(err){ console.warn("Form submit error", err); }
+      }
+
+      msg.textContent = "Thanks! Redirecting…"; msg.className="hint success";
+      setTimeout(()=>location.replace(TARGET_URL), 300);
+    });
+  </script>
+</body>
+</html>

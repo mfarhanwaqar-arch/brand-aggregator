@@ -17,6 +17,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<script>
+  (function(){
+    try{
+      const vars = JSON.parse(localStorage.getItem('ac_theme_vars')||'null');
+      if(vars){
+        const r = document.documentElement;
+        Object.entries(vars).forEach(([k,v])=>r.style.setProperty(`--${k}`, v));
+      }
+    }catch(e){}
+  })();
+</script>
+
   <style>
     :root{--bg:#0b0d10;--panel:#11151a;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--brand:#22c55e;--ac:#0ea5e9}
     *{box-sizing:border-box}

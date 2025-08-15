@@ -3,96 +3,179 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Theme • ads crafted</title>
+  <title>Theme Settings • Ads Tools</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Poppins:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Apply saved theme first -->
+  <script>
+    (function(){
+      try{
+        const vars = JSON.parse(localStorage.getItem('ac_theme_vars')||'null');
+        if (vars) Object.entries(vars).forEach(([k,v])=>document.documentElement.style.setProperty(`--${k}`, v));
+        const appBg = localStorage.getItem('ac_theme_appbg');
+        if (appBg) document.documentElement.style.setProperty('--app-bg', appBg);
+        const font = localStorage.getItem('ac_theme_font');
+        if (font) document.documentElement.style.setProperty('--font', font);
+      }catch(e){}
+    })();
+  </script>
+
   <style>
-    :root{--bg:#0b0d10;--panel:#11151a;--text:#e6e7eb;--muted:#a7b0be;--accent:#5b8cfa;--accent2:#86efac;--r:16px}
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);
-      background:radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%),linear-gradient(180deg,#0b0d10 0%,#090b0f 100%);
-      display:grid;grid-template-rows:auto 1fr auto;min-height:100vh}
-    header,footer{padding:16px 20px;color:var(--muted)}
-    header a, footer a{color:#9ec1ff;text-decoration:none}
-    .wrap{padding:24px 20px;max-width:1000px;margin:0 auto}
-    h1{margin:6px 0 4px;font-size:24px}
-    p.sub{margin:0 0 16px;color:var(--muted)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
-    .card{background:linear-gradient(180deg,#121720 0%,#0f141c 100%);border:1px solid #1f2937;border-radius:var(--r);padding:18px}
-    .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .name{font-weight:700}
-    .swatches{display:flex;gap:6px}
-    .dot{width:18px;height:18px;border-radius:999px;border:1px solid #0003}
-    .btn{margin-top:12px;width:100%;cursor:pointer;border:0;border-radius:12px;padding:12px 14px;font-weight:700;
-      background:var(--accent);color:#081222}
-    .active{background:#16a34a;color:#03140c}
-    .note{margin-top:6px;color:var(--muted);font-size:12px}
+    :root{
+      --bg:#0b0d10;--panel:#11151a;--text:#e6e7eb;--muted:#a7b0be;--line:#1f2937;--brand:#22c55e;--ac:#0ea5e9;
+      --app-bg: radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%), linear-gradient(180deg,#0b0d10 0%,#090b0f 100%);
+      --font: Inter, system-ui, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--font);background:var(--app-bg);color:var(--text)}
+    .wrap{max-width:900px;margin:28px auto;padding:0 16px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    a.btn,button.btn{appearance:none;border:1px solid #2a3441;background:#0b1220;color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;display:inline-block;cursor:pointer}
+    main{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+    h1{margin:0 0 6px}
+    .muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .section{background:#0b1220;border:1px solid #2a3441;border-radius:12px;padding:14px}
+    .section h3{margin:0 0 10px;font-size:16px}
+    .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+    .swatch{height:36px;border-radius:999px;border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .swatch .dot{width:16px;height:16px;border-radius:999px;border:1px solid #0002}
+    .swatch.active{outline:2px solid var(--ac)}
+    label.row{display:flex;align-items:center;gap:10px}
+    select{background:#0b1220;border:1px solid #2a3441;color:var(--text);border-radius:8px;padding:8px 10px;width:100%}
+    .footer{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
+    .reset{background:transparent}
   </style>
 </head>
 <body>
-  <header>← <a href="./app.html">Back to app</a></header>
   <div class="wrap">
-    <h1>Choose a theme</h1>
-    <p class="sub">Your choice is saved in the browser and applies to all pages.</p>
+    <header>
+      <div>
+        <h1>Theme Settings</h1>
+        <p class="muted" style="margin:0">Pick colors, background & font. Saved to your browser and applied across pages.</p>
+      </div>
+      <a class="btn" href="./app.html">← Back to App</a>
+    </header>
 
-    <div id="grid" class="grid"></div>
-    <p id="msg" class="note"></p>
+    <main>
+      <div class="grid">
+        <div class="section">
+          <h3>Color scheme</h3>
+          <div id="schemeGrid" class="swatches"></div>
+        </div>
+
+        <div class="section">
+          <h3>Background</h3>
+          <label class="row"><input id="solidBg" type="checkbox"> Solid (no gradient)</label>
+          <p class="muted" style="margin:8px 0 0;font-size:12px">Toggle to use a flat background color instead of gradients.</p>
+        </div>
+
+        <div class="section">
+          <h3>Font</h3>
+          <select id="fontSel">
+            <option value='Inter, system-ui, Arial, sans-serif'>Inter</option>
+            <option value='"Plus Jakarta Sans", Inter, system-ui, Arial, sans-serif'>Plus Jakarta Sans</option>
+            <option value='Poppins, Inter, system-ui, Arial, sans-serif'>Poppins</option>
+            <option value='"IBM Plex Sans", Inter, system-ui, Arial, sans-serif'>IBM Plex Sans</option>
+          </select>
+        </div>
+
+        <div class="section">
+          <h3>Preview</h3>
+          <p class="muted" style="margin:0">This page updates live as you change settings.</p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <button id="resetTheme" class="btn reset" type="button">Reset</button>
+        <a class="btn" href="./app.html">Save & Close</a>
+      </div>
+    </main>
   </div>
-  <footer><a href="./index.html">Email gate</a> • <a href="./app.html">Main app</a></footer>
 
   <script>
+    // Preset palettes
     const THEMES = {
-      midnight:{ // current default
-        bg:"#0b0d10", panel:"#11151a", text:"#e6e7eb", muted:"#a7b0be", accent:"#5b8cfa", accent2:"#86efac"
-      },
-      light:{
-        bg:"#f8fafc", panel:"#ffffff", text:"#0b1020", muted:"#64748b", accent:"#3b82f6", accent2:"#22c55e"
-      },
-      indigo:{
-        bg:"#0b1020", panel:"#0f1630", text:"#e8ecff", muted:"#a5b4fc", accent:"#8b5cf6", accent2:"#34d399"
-      },
-      emerald:{
-        bg:"#04110e", panel:"#0b1a16", text:"#e6ffee", muted:"#8bb3a8", accent:"#10b981", accent2:"#60a5fa"
-      },
-      rose:{
-        bg:"#130b10", panel:"#1a1116", text:"#ffe6ef", muted:"#f5a2b4", accent:"#fb7185", accent2:"#93c5fd"
-      }
+      midnight:{bg:"#0b0d10", panel:"#11151a", text:"#e5e7eb", muted:"#94a3b8", line:"#1f2937", brand:"#22c55e", ac:"#0ea5e9",
+        gradient:"radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%),linear-gradient(180deg,#0b0d10 0%,#090b0f 100%)"},
+      charcoal:{bg:"#0a0a0b", panel:"#121214", text:"#e6e6e7", muted:"#a1a1aa", line:"#232327", brand:"#10b981", ac:"#38bdf8",
+        gradient:"linear-gradient(180deg,#0a0a0b,#141418)"},
+      indigo:{bg:"#0b1020", panel:"#0f1630", text:"#e8ecff", muted:"#a5b4fc", line:"#2a3150", brand:"#8b5cf6", ac:"#34d399",
+        gradient:"radial-gradient(900px 480px at 15% 10%,#192044 0%,#0b1020 60%)"},
+      emerald:{bg:"#04110e", panel:"#0b1a16", text:"#e6ffee", muted:"#8bb3a8", line:"#1a2a24", brand:"#10b981", ac:"#60a5fa",
+        gradient:"linear-gradient(180deg,#04110e,#0a1613)"},
+      rose:{bg:"#130b10", panel:"#1a1116", text:"#ffe6ef", muted:"#f5a2b4", line:"#2a1a22", brand:"#fb7185", ac:"#93c5fd",
+        gradient:"radial-gradient(1000px 520px at 20% 0%,#2a1622 0%,#130b10 60%)"},
+      light:{bg:"#f8fafc", panel:"#ffffff", text:"#0b1020", muted:"#64748b", line:"#e2e8f0", brand:"#16a34a", ac:"#2563eb",
+        gradient:"linear-gradient(180deg,#f8fafc,#eef2f7)"}
     };
 
-    const grid = document.getElementById('grid');
-    const msg  = document.getElementById('msg');
-    const current = (localStorage.getItem('ac_theme')||'midnight');
+    const schemeGrid = document.getElementById('schemeGrid');
+    const solidBg = document.getElementById('solidBg');
+    const fontSel = document.getElementById('fontSel');
+    const resetTheme = document.getElementById('resetTheme');
 
-    function applyTheme(vars){
-      const r=document.documentElement;
-      Object.entries(vars).forEach(([k,v])=>r.style.setProperty(`--${k}`,v));
-      localStorage.setItem('ac_theme_vars', JSON.stringify(vars));
-    }
-
-    function pickTheme(key){
-      localStorage.setItem('ac_theme', key);
-      applyTheme(THEMES[key]);
-      msg.textContent = `Theme set to “${key}”. Open the app to see it applied.`;
-      [...document.querySelectorAll('.btn')].forEach(b=>b.classList.remove('active'));
-      const btn=document.getElementById('btn-'+key); if(btn) btn.classList.add('active');
-    }
-
-    // Render cards
-    grid.innerHTML = Object.entries(THEMES).map(([key,vars])=>{
-      const dots = [vars.bg,vars.panel,vars.text,vars.accent,vars.accent2]
-        .map(c=>`<span class="dot" style="background:${c}"></span>`).join('');
-      const active = current===key ? 'active' : '';
-      return `<div class="card">
-        <div class="row"><div class="name">${key}</div><div class="swatches">${dots}</div></div>
-        <button id="btn-${key}" class="btn ${active}" onclick="pickTheme('${key}')">${active?'Active':'Use theme'}</button>
-      </div>`;
+    const order = ["midnight","charcoal","indigo","emerald","rose","light"];
+    schemeGrid.innerHTML = order.map(k=>{
+      const v = THEMES[k];
+      return `<button type="button" class="swatch" data-key="${k}" title="${k}">
+        <span class="dot" style="background:${v.bg}"></span>
+      </button>`;
     }).join('');
 
-    // Apply current theme immediately on this page
-    const savedVars = localStorage.getItem('ac_theme_vars');
-    if (savedVars) applyTheme(JSON.parse(savedVars));
-    else applyTheme(THEMES[current]);
+    function applyTheme(key, solid){
+      const v = THEMES[key] || THEMES.midnight;
+      const r = document.documentElement;
+      r.style.setProperty('--bg', v.bg);
+      r.style.setProperty('--panel', v.panel);
+      r.style.setProperty('--text', v.text);
+      r.style.setProperty('--muted', v.muted);
+      r.style.setProperty('--line', v.line);
+      r.style.setProperty('--brand', v.brand);
+      r.style.setProperty('--ac', v.ac);
+      r.style.setProperty('--app-bg', solid ? v.bg : v.gradient);
+      localStorage.setItem('ac_theme_vars', JSON.stringify({bg:v.bg,panel:v.panel,text:v.text,muted:v.muted,line:v.line,brand:v.brand,ac:v.ac}));
+      localStorage.setItem('ac_theme_appbg', solid ? v.bg : v.gradient);
+      localStorage.setItem('ac_theme_key', key);
+      document.querySelectorAll('.swatch').forEach(b=>b.classList.toggle('active', b.dataset.key===key));
+    }
+    function applyFont(fontVal){
+      document.documentElement.style.setProperty('--font', fontVal);
+      localStorage.setItem('ac_theme_font', fontVal);
+    }
+
+    // Load saved state
+    (function init(){
+      const savedKey = localStorage.getItem('ac_theme_key') || 'midnight';
+      const savedBg = localStorage.getItem('ac_theme_appbg');
+      const solid = savedBg ? savedBg === (THEMES[savedKey]?.bg) : false;
+      applyTheme(savedKey, solid);
+      solidBg.checked = solid;
+      document.querySelectorAll('.swatch').forEach(b=>b.classList.toggle('active', b.dataset.key===savedKey));
+
+      const savedFont = localStorage.getItem('ac_theme_font');
+      if (savedFont) fontSel.value = savedFont;
+    })();
+
+    schemeGrid.addEventListener('click', e=>{
+      const btn = e.target.closest('.swatch'); if(!btn) return;
+      applyTheme(btn.dataset.key, solidBg.checked);
+    });
+    solidBg.addEventListener('change', ()=>{
+      const key = localStorage.getItem('ac_theme_key') || 'midnight';
+      applyTheme(key, solidBg.checked);
+    });
+    fontSel.addEventListener('change', ()=>applyFont(fontSel.value));
+    resetTheme.addEventListener('click', ()=>{
+      applyTheme('midnight', false);
+      applyFont('Inter, system-ui, Arial, sans-serif');
+    });
+
+    // Keyboard: Alt+T returns to app
+    window.addEventListener('keydown', e=>{ if(e.altKey && (e.key==='t' || e.key==='T')) location.href='./app.html'; });
   </script>
 </body>
 </html>

@@ -101,7 +101,7 @@
       const live=t.status==='live';
       const statusLabel=t.status==='live'?'Live':t.status==='coming-soon'?'Coming soon':'Private';
       const statusClass=t.status==='live'?'':'status-'+t.status;
-      const href=live?`tools/${t.slug}/`:null;
+      const href = live ? (t.href || `tools/${t.slug}/`) : null;
       const code=`https://github.com/${GH_USER}/${GH_REPO}/tree/main/tools/${t.slug}`;
       const features = Array.isArray(t.features) && t.features.length ? `<ul class="features">${t.features.map(f=>`<li>${f}</li>`).join('')}</ul>` : '';
       const thumb = t.thumb ? `<img class="thumb" alt="${t.name}" src="${t.thumb}">` : '';

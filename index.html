@@ -7,6 +7,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<script>
+  (function(){
+    try{
+      const vars = JSON.parse(localStorage.getItem('ac_theme_vars')||'null');
+      if(vars){
+        const r = document.documentElement;
+        Object.entries(vars).forEach(([k,v])=>r.style.setProperty(`--${k}`, v));
+      }
+    }catch(e){}
+  })();
+</script>
+
   <style>
     :root{--bg:#0b0d10;--panel:#11151a;--muted:#a7b0be;--text:#e6e7eb;--accent:#5b8cfa;--accent2:#86efac;--r:16px}
     *{box-sizing:border-box} html,body{height:100%}

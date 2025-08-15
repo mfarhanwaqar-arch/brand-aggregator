@@ -3,106 +3,669 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title><!-- TODO: Tool Name --> New Tool</title>
+  <title>ASIN Performance Analyzer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <!-- Optional: CSV/XLSX parsers (uncomment if needed) -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
+  <!-- Parsers -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    :root{--bg:#0b0d10;--panel:#11151a;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--ac:#0ea5e9;--brand:#22c55e}
+    :root{--bg:#0b0d10;--panel:#11151a;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--brand:#22c55e;--ac:#0ea5e9}
     *{box-sizing:border-box}
     body{margin:0;background:linear-gradient(120deg,#0b0d10,#0f1720);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif}
-    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
-    .btn{appearance:none;border:1px solid #2a3441;background:#0b1220;color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;cursor:pointer}
+    .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
+    a.btn,button.btn{appearance:none;border:1px solid #2a3441;background:#0b1220;color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;cursor:pointer}
     .btn.primary{background:linear-gradient(135deg,var(--ac),var(--brand));border:none;color:#0b0d10}
+    .btn.ghost{background:transparent;border:1px dashed #2a3441}
     .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:12px}
-    .pill{display:inline-block;border:1px solid #2a3441;background:#0b1220;border-radius:999px;padding:4px 8px;font-size:12px;color:var(--muted)}
-    label{font-weight:600;display:block;margin:8px 0 6px}
+    .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+    label{font-weight:600;display:block;margin:6px 0}
     input[type="text"],input[type="file"],textarea{width:100%;background:#0b1220;border:1px solid #2a3441;color:var(--text);border-radius:10px;padding:10px}
-    table{border-collapse:collapse;width:100%;margin-top:12px}
-    th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left}
+    table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed}
+    /* column resize handle */
+    th{position:relative}
+    .col-resize-handle{position:absolute;top:0;right:-2px;width:6px;height:100%;cursor:col-resize;user-select:none}
+    .col-resize-handle:hover{background:linear-gradient(180deg,transparent 0%,#2a3441 40%,#2a3441 60%,transparent 100%)}
+    /* Better title wrapping without blowing up row height */
+    th.title,td.title{ text-align:left; white-space:normal; overflow-wrap:anywhere }
+    th.title{ width:340px }
+    td.title{ max-width:340px; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
+    @media (max-width: 1100px){ th.title{ width:300px } td.title{ max-width:300px } }
+    @media (max-width: 900px){ th.title{ width:240px } td.title{ max-width:240px } }
+    th,td{border-bottom:1px solid var(--line);padding:10px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left;white-space:normal;overflow-wrap:anywhere}
+    .pill{display:inline-block;border:1px solid #2a3441;background:#0b1220;border-radius:999px;padding:4px 8px;font-size:12px;color:var(--muted)}
     .muted{color:var(--muted)}
+    .bad{color:#f87171}
+    .good{color:#34d399}
+    .kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+    .kpi{background:#0b1220;border:1px solid #2a3441;border-radius:12px;padding:10px}
+    .kpi .v{font-size:20px;font-weight:700}
+    .badge{display:inline-block;border:1px solid #2a3441;background:#0b1220;border-radius:999px;padding:2px 8px;font-size:11px;color:#a7b0be;margin-right:6px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0b1220;border:1px solid #2a3441;color:#e5e7eb;padding:10px 14px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.2s}
+    .toast.show{opacity:1}
+      /* === Visibility tweaks (make metrics clear, shorten title) === */
+    th.title{width:220px!important}
+    td.title{max-width:220px!important;-webkit-line-clamp:1!important}
+    th{white-space:normal!important}
+    td{white-space:nowrap!important}
+    td.num{font-variant-numeric:tabular-nums;font-size:13px}
+      /* compact table header so columns take less space */
+    thead th{font-size:11px;line-height:1.1;padding:6px 8px}
+    /* keep data rows readable */
+    tbody td{padding:8px 10px}
+      /* sorting indicators */
+    th.sortable{cursor:pointer;user-select:none}
+    th.sorted-asc::after{content:' ▲';font-size:10px;opacity:.7}
+    th.sorted-desc::after{content:' ▼';font-size:10px;opacity:.7}
+      /* columns panel */
+    .cols-panel{position:fixed;right:24px;top:140px;background:#0b1220;border:1px solid #2a3441;border-radius:12px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.35);max-height:60vh;overflow:auto;display:none;min-width:260px}
+    .cols-panel h4{margin:6px 0 8px;font-size:13px}
+    .cols-list{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .cols-list label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500}
+    .cols-actions{display:flex;gap:8px;margin-top:8px}
+    .cols-actions .btn{padding:6px 10px;font-weight:600}
+    .cols-hint{color:var(--muted);font-size:11px;margin-top:6px}
+      /* ensure the columns panel floats above the table */
+    .cols-panel{z-index:9999}
   </style>
 </head>
 <body>
   <div class="wrap">
     <a class="btn" href="../../">← Back to tools</a>
-    <h1 style="margin:10px 0 6px"><!-- TODO: Tool Name --> New Tool</h1>
-    <p class="muted" style="margin:0 0 12px">Short description of what this tool does. Keep it one sentence.</p>
+    <h1 style="margin:10px 0 6px">ASIN Performance Analyzer</h1>
+    <p class="muted" style="margin:0 0 12px">Merge <strong>Amazon Business Reports</strong> with <strong>Sponsored Products</strong> to compute TACoS and ad contribution by ASIN.</p>
 
     <div class="card">
-      <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+      <div class="grid">
         <div>
-          <label>Example input</label>
-          <input id="exampleInput" type="text" placeholder="type something…" />
+          <label>Business Report (.csv or .xlsx)</label>
+          <input id="brFile" type="file" accept=".csv,.xlsx,.xls" />
+          <div id="brCols" class="muted" style="margin-top:6px"></div>
         </div>
         <div>
-          <label>Optional file upload</label>
-          <input id="fileInput" type="file" />
+          <label>Sponsored Products Report (.csv or .xlsx)</label>
+          <input id="spFile" type="file" accept=".csv,.xlsx,.xls" />
+          <div id="spCols" class="muted" style="margin-top:6px"></div>
         </div>
       </div>
-      <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn primary" id="runBtn">Run</button>
-        <button class="btn" id="resetBtn">Reset</button>
+      <div class="controls" style="margin-top:10px">
+        <button class="btn primary" id="processBtn">Process</button>
+        <button class="btn" id="downloadSample">Download sample CSVs</button>
+        <select id="groupMode" style="background:#0b1220;border:1px solid #2a3441;color:var(--text);border-radius:10px;padding:10px">
+          <option value="child" selected>Group: Child ASIN</option>
+          <option value="parent">Group: Parent ASIN</option>
+        </select>
+        <input id="search" type="text" placeholder="Filter by ASIN, parent, or title…" style="flex:1;min-width:220px" />
+        <button class="btn" id="colsBtn">Columns</button>
+        <button class="btn ghost" id="exportBtn" disabled>Export CSV</button>
       </div>
-      <div id="error" style="color:#ef4444;margin-top:6px"></div>
+      <div id="errors" class="bad" style="margin-top:6px"></div>
     </div>
 
-    <div class="card">
-      <h3 style="margin:0 0 6px">Results</h3>
-      <div id="results" class="muted">No results yet.</div>
+    <div class="card" id="kpiCard" style="display:none">
+      <div class="kpis">
+        <div class="kpi"><div class="muted">SP Spend</div><div class="v" id="kSpend">0.00</div></div>
+        <div class="kpi"><div class="muted">SP Sales</div><div class="v" id="kSpSales">0.00</div></div>
+        <div class="kpi"><div class="muted">BR Sales (Total)</div><div class="v" id="kBrSales">0.00</div></div>
+        <div class="kpi"><div class="muted">TACoS %</div><div class="v" id="kTacos">0.00</div></div>
+        <div class="kpi"><div class="muted">ACOS %</div><div class="v" id="kAcos">0.00</div></div>
+      </div>
     </div>
 
-    <div class="card">
-      <h3 style="margin:0 0 6px">How it works</h3>
-      <ol style="margin:8px 0 0 18px;line-height:1.6">
-        <li>Fill inputs (or upload a file)</li>
-        <li>Click <strong>Run</strong></li>
-        <li>See results / export</li>
-      </ol>
+    <div class="card" id="tableCard" style="display:none">
+      <div class="controls" style="margin-bottom:8px">
+        <span class="pill" id="detectedBr"></span>
+        <span class="pill" id="detectedSp"></span>
+      </div>
+      <div id="tableOut"></div>
     </div>
   </div>
 
+  <div class="toast" id="toast">Link copied</div>
+  <div id="colsPanel" class="cols-panel"></div>
+
   <script>
-    const qs = (id)=>document.getElementById(id);
+  // ---------- Helpers ----------
+  const qs = (id)=>document.getElementById(id);
+  const num = (v)=>{ if(v===undefined||v===null||v==='') return 0; if(typeof v==='number') return v; return parseFloat(String(v).replace(/[^0-9.-]/g,''))||0; };
+  const fmt0=(n)=> (n||0).toLocaleString();
+  const fmt2=(n)=> (n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 
-    qs('runBtn').onclick = async () => {
-      qs('error').textContent = '';
-      const text = qs('exampleInput').value.trim();
-      // const file = qs('fileInput').files[0]; // if you need files
+  function toast(msg){const el=qs('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1200);}
 
-      if(!text){ qs('error').textContent = 'Please type something first.'; return; }
+  function badgeList(el, title, arr){ el.innerHTML = arr && arr.length ? `<span class="badge">${title}:</span>`+arr.map(x=>`<span class="badge">${x}</span>`).join(' ') : '' }
 
-      // TODO: Your tool logic here. Example below:
-      const out = text.toUpperCase();
-      qs('results').textContent = out;
-    };
+  // Read CSV or XLSX to rows + headers
+  function readFile(file){
+    return new Promise((resolve, reject)=>{
+      if(!file) return reject(new Error('No file selected'));
+      const ext=(file.name.split('.').pop()||'').toLowerCase();
+      if(ext==='csv'){
+        Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>resolve({rows:r.data,headers:r.meta.fields||[],sheet:'CSV'}),error:reject});
+      } else if(ext==='xlsx' || ext==='xls'){
+        const fr=new FileReader();
+        fr.onload=e=>{
+          try{
+            const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+            // Choose the best sheet by looking for known header terms
+            let best = {name: wb.SheetNames[0], headers: [], rows: [], score: -1};
+            for(const name of wb.SheetNames){
+              const ws = wb.Sheets[name];
+              const rows2D = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+              let headerRowIndex = 0;
+              for(let i=0;i<rows2D.length;i++){
+                const row = (rows2D[i]||[]).map(String);
+                const joined = row.join(' ').toLowerCase();
+                const nonEmpty = row.filter(c=>String(c).trim()!=='').length;
+                if(nonEmpty>=5 && (joined.includes('impressions')||joined.includes('asin')||joined.includes('clicks')||joined.includes('campaign id')||joined.includes('spend')||joined.includes('sales'))){
+                  headerRowIndex=i; break;
+                }
+              }
+              const headers = (rows2D[headerRowIndex]||[]).map(String);
+              const rows = XLSX.utils.sheet_to_json(ws,{range: headerRowIndex+1, header: headers, defval:''});
+              const score = headers.reduce((a,h)=>{const x=h.toLowerCase();return a + (x.includes('asin')||x.includes('impressions')||x.includes('spend')||x.includes('sales')||x.includes('clicks')?1:0);},0);
+              if(score>best.score) best = {name, headers, rows, score};
+            }
+            resolve({rows:best.rows, headers:best.headers, sheet:best.name});
+          } catch(err){ reject(err); }
+        };
+        fr.onerror=reject; fr.readAsArrayBuffer(file);
+      } else {
+        reject(new Error('Unsupported file type (use .csv or .xlsx)'));
+      }
+    });
+  }
 
-    qs('resetBtn').onclick = () => {
-      qs('exampleInput').value = '';
-      qs('fileInput').value = '';
-      qs('results').textContent = 'No results yet.';
-      qs('error').textContent = '';
-    };
-
-    // ===== Helpers for CSV/XLSX (uncomment scripts in <head> first) =====
-    async function readCsvOrXlsx(file){
-      return new Promise((resolve, reject)=>{
-        if(!file) return reject(new Error('No file'));
-        const ext=(file.name.split('.').pop()||'').toLowerCase();
-        if(ext==='csv'){
-          Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>resolve({rows:r.data,headers:r.meta.fields||[]}),error:reject});
-        } else if(ext==='xlsx'){
-          const fr=new FileReader();
-          fr.onload=e=>{ try{ const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{defval:''}); const headers=XLSX.utils.sheet_to_json(ws,{header:1})[0]||[]; resolve({rows,headers}); } catch(err){ reject(err); } };
-          fr.onerror=reject; fr.readAsArrayBuffer(file);
-        } else {
-          reject(new Error('Unsupported file type (use .csv or .xlsx)'));
-        }
-      });
+  // Robust header matching
+  function findHeader(headers, candidates){
+    const H = headers.map(h=>String(h).trim());
+    for(const cand of candidates){
+      const idx = H.findIndex(h => h.toLowerCase()===cand.toLowerCase());
+      if(idx!==-1) return H[idx];
+      // loose match: strip punctuation/extra spaces
+      const normCand = cand.toLowerCase().replace(/[^a-z0-9]+/g,'');
+      const idx2 = H.findIndex(h=> h.toLowerCase().replace(/[^a-z0-9]+/g,'')===normCand);
+      if(idx2!==-1) return H[idx2];
     }
+    return '';
+  }
+
+  // ---------- Expected columns ----------
+  const BR = {
+    parent:["(Parent) ASIN","Parent ASIN"],
+    child:["(Child) ASIN","Child ASIN","ASIN"],
+    title:["Title"],
+    sessions:["Sessions - Total","Sessions"],
+    pageviews:["Page Views - Total","Page Views"],
+    buybox:["Featured Offer (Buy Box) Percentage","Featured Offer Percentage","Buy Box Percentage"],
+    units:["Units Ordered"],
+    unitSession:["Unit Session Percentage"],
+    sales:["Ordered Product Sales"],
+    orders:["Total Order Items"]
+  };
+
+  const SP = {
+    entity:["Entity","Record Type","Record_Type"],
+    asin:["ASIN (Informational only)","ASIN","Advertised ASIN","Advertised ASIN (Informational only)"],
+    impressions:["Impressions"],
+    clicks:["Clicks"],
+    spend:["Spend","Cost"],
+    sales:["Sales","7 Day Total Sales"],
+    orders:["Orders","7 Day Total Orders"],
+    units:["Units","7 Day Total Units"],
+    cpc:["CPC"],
+    acos:["ACOS"],
+    roas:["ROAS"]
+  };
+
+  function mapHeaders(headers, def){
+    const out={};
+    for(const k of Object.keys(def)){
+      out[k] = findHeader(headers, def[k]);
+    }
+    return out;
+  }
+
+  // ---------- Core processing ----------
+  async function process(){
+    qs('errors').textContent='';
+    const brFile = qs('brFile').files[0];
+    const spFile = qs('spFile').files[0];
+    if(!brFile || !spFile){ qs('errors').textContent='Please choose both files (Business Report + Sponsored Products).'; return; }
+
+    try{
+      const [BRdata, SPdata] = await Promise.all([readFile(brFile), readFile(spFile)]);
+
+      const brCols = mapHeaders(BRdata.headers, BR);
+      const spCols = mapHeaders(SPdata.headers, SP);
+
+      badgeList(qs('detectedBr'),'BR', [BRdata.sheet?`Sheet: ${BRdata.sheet}`:null, ...Object.values(brCols)].filter(Boolean));
+      badgeList(qs('detectedSp'),'SP', [SPdata.sheet?`Sheet: ${SPdata.sheet}`:null, ...Object.values(spCols)].filter(Boolean));
+
+      qs('brCols').textContent = 'Detected: ' + Object.values(brCols).filter(Boolean).join(' • ');
+      qs('spCols').textContent = 'Detected: ' + Object.values(spCols).filter(Boolean).join(' • ');
+
+      if(!brCols.child || !brCols.sales){ throw new Error('Business Report missing required columns (ASIN and Ordered Product Sales).'); }
+      if(!spCols.asin || !spCols.spend){ throw new Error('Sponsored Products missing required columns (ASIN and Spend).'); }
+
+      // Aggregate BR by child ASIN
+      const brAgg = {};
+      for(const r of BRdata.rows){
+        const asin = String(r[brCols.child]||'').trim().toUpperCase();
+        if(!asin) continue;
+        const o = brAgg[asin] ||= {asin, parent:'', title:'', sessions:0, pageviews:0, buybox:0, units:0, unitSession:0, brSales:0, orders:0};
+        o.parent = o.parent || String(r[brCols.parent]||'').trim().toUpperCase();
+        o.title = o.title || String(r[brCols.title]||'').trim();
+        o.sessions += num(r[brCols.sessions]);
+        o.pageviews += num(r[brCols.pageviews]);
+        o.buybox += num(r[brCols.buybox]); // if multi-rows per ASIN, this is simplistic; acceptable for quick view
+        o.units += num(r[brCols.units]);
+        o.unitSession += num(r[brCols.unitSession]);
+        o.brSales += num(r[brCols.sales]);
+        o.orders += num(r[brCols.orders]);
+      }
+
+      // Aggregate SP by ASIN
+      const spAgg = {};
+      for(const r of SPdata.rows){
+        // Only keep Product Ad rows when Entity is present
+        if (spCols.entity) {
+          const ent = String(r[spCols.entity]||'').trim().toLowerCase();
+          if (ent && !(ent.includes('product') && ent.includes('ad'))) continue;
+        }
+        const asin = String(r[spCols.asin]||'').trim().toUpperCase();
+        if(!asin) continue;
+        const o = spAgg[asin] ||= {asin, impressions:0, clicks:0, spend:0, sales:0, orders:0, units:0};
+        o.impressions += num(r[spCols.impressions]);
+        o.clicks += num(r[spCols.clicks]);
+        o.spend += num(r[spCols.spend]);
+        o.sales += num(r[spCols.sales]);
+        o.orders += num(r[spCols.orders]);
+        o.units += num(r[spCols.units]);
+      }
+
+      // Merge keys
+      const keys = Array.from(new Set([...Object.keys(brAgg), ...Object.keys(spAgg)])).sort();
+
+      // Build rows
+      const rows = keys.map(k=>{
+        const b = brAgg[k]||{asin:k};
+        const s = spAgg[k]||{};
+        const impressions = s.impressions||0, clicks=s.clicks||0, spend=s.spend||0, sSales=s.sales||0, sOrders=s.orders||0, sUnits=s.units||0;
+        const brSales = b.brSales||0;
+        const ctr = impressions? (clicks/impressions*100):0;
+        const cvr = clicks? (sOrders/clicks*100):0;
+        const cpc = clicks? (spend/clicks):0;
+        const acos = sSales? (spend/sSales*100):0;
+        const roas = spend? (sSales/spend):0;
+        const tacos = brSales? (spend/brSales*100):0;
+        return {
+          asin:k,
+          parent:b.parent||'',
+          title:b.title||'',
+          sessions:b.sessions||0,
+          pageviews:b.pageviews||0,
+          buybox:b.buybox||0,
+          units:b.units||0,
+          unitSession:b.unitSession||0,
+          brSales,
+          brOrders:b.orders||0,
+          impressions, clicks, spend, sSales, sOrders, sUnits,
+          ctr, cvr, cpc, acos, roas, tacos
+        };
+      });
+
+      // Totals
+      const totals = rows.reduce((a,r)=>({
+        impressions:a.impressions+r.impressions,
+        clicks:a.clicks+r.clicks,
+        spend:a.spend+r.spend,
+        sSales:a.sSales+r.sSales,
+        sOrders:a.sOrders+r.sOrders,
+        sUnits:a.sUnits+r.sUnits,
+        brSales:a.brSales+r.brSales
+      }),{impressions:0,clicks:0,spend:0,sSales:0,sOrders:0,sUnits:0,brSales:0});
+      const kAcos = totals.sSales? totals.spend/totals.sSales*100 : 0;
+      const kTacos = totals.brSales? totals.spend/totals.brSales*100 : 0;
+
+      // KPIs
+      qs('kSpend').textContent = fmt2(totals.spend);
+      qs('kSpSales').textContent = fmt2(totals.sSales);
+      qs('kBrSales').textContent = fmt2(totals.brSales);
+      qs('kAcos').textContent = fmt2(kAcos);
+      qs('kTacos').textContent = fmt2(kTacos);
+      qs('kpiCard').style.display='block';
+
+      // Cache and render according to group mode
+      window._rowsChild = rows;
+      window._rowsParent = rollupToParent(rows);
+      const mode = qs('groupMode').value;
+      const useRows = mode==='parent' ? window._rowsParent : window._rowsChild;
+      window._rows = useRows;
+      renderTable(useRows, mode);
+
+      // enable export
+      qs('exportBtn').disabled=false;
+      qs('exportBtn').onclick=()=> exportCsv(useRows, mode, window._lastColsUsed);
+      qs('colsBtn').disabled=false;
+      buildColsPanel(mode);
+
+    }catch(err){
+      console.error(err);
+      qs('errors').textContent = err.message || String(err);
+    }
+  }
+
+  // column definitions for render + sorting + formatting
+  const COLS = {
+    parent:[
+      {key:'parent',label:'Parent ASIN'},
+      {key:'childCount',label:'# Children',class:'num',fmt:'0'},
+      {key:'title',label:'Title',class:'title'},
+      {key:'brSales',label:'BR Sales',class:'num',fmt:'2'},
+      {key:'units',label:'BR Units',class:'num',fmt:'0'},
+      {key:'sessions',label:'Sessions',class:'num',fmt:'0'},
+      {key:'pageviews',label:'Page Views',class:'num',fmt:'0'},
+      {key:'impressions',label:'SP Impr.',class:'num',fmt:'0'},
+      {key:'clicks',label:'SP Clicks',class:'num',fmt:'0'},
+      {key:'spend',label:'SP Spend',class:'num',fmt:'2'},
+      {key:'sSales',label:'SP Sales',class:'num',fmt:'2'},
+      {key:'sOrders',label:'SP Orders',class:'num',fmt:'0'},
+      {key:'sUnits',label:'SP Units',class:'num',fmt:'0'},
+      {key:'ctr',label:'CTR %',class:'num',fmt:'2'},
+      {key:'cvr',label:'CVR %',class:'num',fmt:'2'},
+      {key:'acos',label:'ACOS %',class:'num',fmt:'2'},
+      {key:'cpc',label:'CPC',class:'num',fmt:'2'},
+      {key:'roas',label:'ROAS',class:'num',fmt:'2'},
+      {key:'tacos',label:'TACoS %',class:'num',fmt:'2'},
+    ],
+    child:[
+      {key:'asin',label:'Child ASIN'},
+      {key:'parent',label:'Parent ASIN'},
+      {key:'title',label:'Title',class:'title'},
+      {key:'brSales',label:'BR Sales',class:'num',fmt:'2'},
+      {key:'units',label:'BR Units',class:'num',fmt:'0'},
+      {key:'sessions',label:'Sessions',class:'num',fmt:'0'},
+      {key:'pageviews',label:'Page Views',class:'num',fmt:'0'},
+      {key:'buybox',label:'Buy Box %',class:'num',fmt:'2'},
+      {key:'unitSession',label:'Unit Session %',class:'num',fmt:'2'},
+      {key:'impressions',label:'SP Impr.',class:'num',fmt:'0'},
+      {key:'clicks',label:'SP Clicks',class:'num',fmt:'0'},
+      {key:'spend',label:'SP Spend',class:'num',fmt:'2'},
+      {key:'sSales',label:'SP Sales',class:'num',fmt:'2'},
+      {key:'sOrders',label:'SP Orders',class:'num',fmt:'0'},
+      {key:'sUnits',label:'SP Units',class:'num',fmt:'0'},
+      {key:'ctr',label:'CTR %',class:'num',fmt:'2'},
+      {key:'cvr',label:'CVR %',class:'num',fmt:'2'},
+      {key:'acos',label:'ACOS %',class:'num',fmt:'2'},
+      {key:'cpc',label:'CPC',class:'num',fmt:'2'},
+      {key:'roas',label:'ROAS',class:'num',fmt:'2'},
+      {key:'tacos',label:'TACoS %',class:'num',fmt:'2'},
+    ]
+  };
+
+  // --- Visible columns state + panel ---
+  const ESSENTIAL = { parent:['parent','title'], child:['asin','parent','title'] };
+  function getVisibleCols(mode){
+    if(mode==='parent') return (window._visibleParent ||= COLS.parent.map(c=>c.key));
+    return (window._visibleChild ||= COLS.child.map(c=>c.key));
+  }
+  function setVisibleCols(mode, arr){ if(mode==='parent') window._visibleParent = arr; else window._visibleChild = arr; }
+  function buildColsPanel(mode){
+    const panel = document.getElementById('colsPanel');
+    const cols = COLS[mode];
+    const vis = new Set(getVisibleCols(mode));
+    const essential = new Set(ESSENTIAL[mode]);
+    const items = cols.map(c=>{
+      const checked = vis.has(c.key) ? 'checked' : '';
+      const disabled = essential.has(c.key) ? 'disabled' : '';
+      return `<label><input type="checkbox" data-key="${c.key}" ${checked} ${disabled}/> ${c.label}</label>`;
+    }).join('');
+    panel.innerHTML = `<h4>Visible columns (${mode})</h4>
+      <div class="cols-list">${items}</div>
+      <div class="cols-actions">
+        <button class="btn" id="colsAll">Select all</button>
+        <button class="btn ghost" id="colsReset">Reset</button>
+        <button class="btn" id="colsClose">Close</button>
+      </div>
+      <div class="cols-hint">Required columns are locked.</div>`;
+
+    panel.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const cur = new Set(getVisibleCols(mode));
+        if(cb.checked) cur.add(cb.dataset.key); else cur.delete(cb.dataset.key);
+        // ensure essentials remain
+        ESSENTIAL[mode].forEach(k=>cur.add(k));
+        setVisibleCols(mode, Array.from(cur));
+        if(window._rows){ renderTable(window._rows, mode); }
+      });
+    });
+    panel.querySelector('#colsAll').onclick=()=>{
+      const all = COLS[mode].map(c=>c.key);
+      setVisibleCols(mode, all);
+      buildColsPanel(mode); if(window._rows) renderTable(window._rows, mode);
+    };
+    panel.querySelector('#colsReset').onclick=()=>{
+      setVisibleCols(mode, COLS[mode].map(c=>c.key));
+      buildColsPanel(mode); if(window._rows) renderTable(window._rows, mode);
+    };
+    panel.querySelector('#colsClose').onclick=()=>{ panel.style.display='none'; };
+  }
+  function toggleColsPanel(){
+    const panel = document.getElementById('colsPanel');
+    // Build once if empty so the panel always opens with content
+    if(!panel.innerHTML.trim()){
+      const mode = qs('groupMode').value;
+      buildColsPanel(mode);
+    }
+    const open = panel.style.display==='block';
+    panel.style.display = open ? 'none' : 'block';
+    qs('colsBtn').setAttribute('aria-expanded', String(!open));
+  }
+
+  function sortList(list){
+    const s = window._sort||{}; if(!s.key) return list;
+    const numeric = new Set(['childCount','brSales','units','sessions','pageviews','impressions','clicks','spend','sSales','sOrders','sUnits','ctr','cvr','acos','cpc','roas','tacos','buybox','unitSession']);
+    const key = s.key; const dir = s.dir==='asc'?'asc':'desc';
+    const arr = list.slice();
+    arr.sort((a,b)=>{
+      let va=a[key], vb=b[key];
+      if(numeric.has(key)){ va=Number(va)||0; vb=Number(vb)||0; }
+      else { va=(va||'').toString().toLowerCase(); vb=(vb||'').toString().toLowerCase(); }
+      if(va<vb) return dir==='asc'?-1:1; if(va>vb) return dir==='asc'?1:-1; return 0;
+    });
+    return arr;
+  }
+
+  function enableHeaderSort(container, mode){
+    const table = container.querySelector('table'); if(!table||!table.tHead) return;
+    const ths = Array.from(table.tHead.rows[0].cells);
+    ths.forEach(th=>{
+      const key = th.getAttribute('data-key'); if(!key) return;
+      th.addEventListener('click', (e)=>{
+        if(e.target.classList.contains('col-resize-handle')) return; // ignore resize handle
+        const cur = window._sort||{}; let dir = 'desc';
+        if(cur.key===key && cur.dir==='desc') dir='asc';
+        window._sort = {key, dir, mode};
+        if(window._rows) renderTable(window._rows, mode);
+      });
+    });
+  }
+
+  function renderTable(rows, mode='child'){
+    const qv = (qs('search').value||'').trim().toLowerCase();
+    const filtered = qv ? rows.filter(r=>{
+      if(mode==='parent') return (r.parent||'').toLowerCase().includes(qv) || (r.title||'').toLowerCase().includes(qv);
+      return r.asin.toLowerCase().includes(qv) || (r.title||'').toLowerCase().includes(qv);
+    }) : rows;
+
+    // apply visible columns selection
+    let visible = getVisibleCols(mode).slice();
+    ESSENTIAL[mode].forEach(k=>{ if(!visible.includes(k)) visible.push(k); });
+    const cols = COLS[mode].filter(c=> visible.includes(c.key));
+    window._lastColsUsed = cols;
+    const list = sortList(filtered);
+    window._rendered = list; // for export
+
+    const head = `<table><thead><tr>` +
+      cols.map(c=>{
+        const sorted = (window._sort && window._sort.key===c.key) ? ('sorted-'+window._sort.dir) : '';
+        return `<th class="${(c.class||'')} sortable ${sorted}" data-key="${c.key}">${c.label}</th>`;
+      }).join('') + `</tr></thead><tbody>`;
+
+    const body = list.map(r=> `<tr>` +
+      cols.map(c=>{
+        const cls = c.class?` class="${c.class}"`:'';
+        let v = r[c.key];
+        if(c.fmt==='2') v = fmt2(v); else if(c.fmt==='0') v = fmt0(v); else v = (v??'');
+        return `<td${cls}>${v}</td>`;
+      }).join('') + `</tr>`
+    ).join('');
+
+    const html = head + body + `</tbody></table>`;
+    qs('tableOut').innerHTML = html;
+    enableColumnResize(qs('tableOut'), mode);
+    enableHeaderSort(qs('tableOut'), mode);
+    qs('tableCard').style.display='block';
+
+    // make Export CSV reflect current sort
+    qs('exportBtn').onclick = ()=> exportCsv(window._rendered||list, mode, window._lastColsUsed);
+  }
+
+  // Roll up child rows to Parent ASIN level
+  function rollupToParent(childRows){
+    const map={};
+    for(const r of childRows){
+      const key = r.parent || '(No parent)';
+      if(!map[key]) map[key] = {parent:key, title:'', childSet:new Set(), sessions:0,pageviews:0,buybox:0,units:0,unitSession:0,brSales:0,brOrders:0,impressions:0,clicks:0,spend:0,sSales:0,sOrders:0,sUnits:0};
+      const m = map[key];
+      m.childSet.add(r.asin);
+      if(!m.title && r.title) m.title = r.title;
+      m.sessions += r.sessions||0; m.pageviews += r.pageviews||0; m.buybox += r.buybox||0; m.units += r.units||0; m.unitSession += r.unitSession||0; m.brSales += r.brSales||0; m.brOrders += r.brOrders||0;
+      m.impressions += r.impressions||0; m.clicks += r.clicks||0; m.spend += r.spend||0; m.sSales += r.sSales||0; m.sOrders += r.sOrders||0; m.sUnits += r.sUnits||0;
+    }
+    return Object.values(map).map(m=>{
+      const ctr = m.impressions? (m.clicks/m.impressions*100):0;
+      const cvr = m.clicks? (m.sOrders/m.clicks*100):0;
+      const cpc = m.clicks? (m.spend/m.clicks):0;
+      const acos = m.sSales? (m.spend/m.sSales*100):0;
+      const roas = m.spend? (m.sSales/m.spend):0;
+      const tacos = m.brSales? (m.spend/m.brSales*100):0;
+      return {parent:m.parent, title:m.title, childCount:m.childSet.size,
+        brSales:m.brSales, brOrders:m.brOrders,
+        sessions:m.sessions, pageviews:m.pageviews, units:m.units,
+        impressions:m.impressions, clicks:m.clicks, spend:m.spend,
+        sSales:m.sSales, sOrders:m.sOrders, sUnits:m.sUnits,
+        ctr, cvr, cpc, acos, roas, tacos};
+    });
+  }
+
+
+function exportCsv(rows, mode='child', cols){
+  const useCols = cols && cols.length ? cols : COLS[mode];
+  const header = useCols.map(c => c.label);
+
+  const data = rows.map(r => useCols.map(c => {
+    let v = r[c.key];
+    if (c.fmt === '2') return Number(v || 0).toFixed(2);
+    if (c.fmt === '0') return String(fmt0(v)).replace(/,/g, '');
+    return v == null ? '' : String(v);
+  }));
+
+  // Must be one line; the broken version had a newline inside the regex
+  const escapeCell = v =>
+    (typeof v === 'string' && /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v);
+
+  // Must be one line; the broken version had .join('  <newline>  ')
+  const csv = [header, ...data]
+    .map(row => row.map(escapeCell).join(','))
+    .join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'asin-performance.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+
+
+  // events
+  qs('processBtn').addEventListener('click', process);
+  qs('groupMode').addEventListener('change', ()=>{
+    if(window._rowsChild){
+      const mode = qs('groupMode').value;
+      const rows = mode==='parent' ? window._rowsParent : window._rowsChild;
+      renderTable(rows, mode);
+      qs('exportBtn').onclick=()=> exportCsv(rows, mode, window._lastColsUsed);
+      const panel = document.getElementById('colsPanel'); if(panel) panel.style.display='none';
+      buildColsPanel(mode);
+      window._rows = rows;
+    }
+  });
+  qs('colsBtn').addEventListener('click', ()=>{
+    const mode = qs('groupMode').value;
+    buildColsPanel(mode);
+    toggleColsPanel();
+  });
+  // enable Columns even before processing and prebuild panel
+  setTimeout(()=>{ try{ qs('colsBtn').disabled = false; buildColsPanel(qs('groupMode').value); }catch(e){} }, 0);
+  qs('search').addEventListener('input', ()=>{
+    const table = qs('tableOut'); if(table.innerHTML.trim()){
+      // naive: re-render last computed rows? For simplicity, call process again would re-parse files (slow).
+      // Instead, cache rows in window._rows when processing.
+      if(window._rows){ const mode=qs('groupMode').value; renderTable(window._rows, mode);} 
+    }
+  });
+
+    // sample CSVs
+  qs('downloadSample').addEventListener('click', ()=>{
+    const br = `Child ASIN,Parent ASIN,Title,Sessions - Total,Page Views - Total,Featured Offer (Buy Box) Percentage,Units Ordered,Unit Session Percentage,Ordered Product Sales,Total Order Items
+B00AAA111,PARENT1,Sample Product A,100,250,85,10,10,500,12
+B00BBB222,PARENT2,Sample Product B,200,500,60,5,5,200,6`;
+    const sp = `Entity,ASIN (Informational only),Impressions,Clicks,Spend,Sales,Orders,Units
+Product Ad,B00AAA111,10000,200,50,400,8,9
+Product Ad,B00BBB222,5000,80,30,120,3,3`;
+    const a1=document.createElement('a');a1.href=URL.createObjectURL(new Blob([br],{type:'text/csv'}));a1.download='business-report-sample.csv';a1.click();
+    const a2=document.createElement('a');a2.href=URL.createObjectURL(new Blob([sp],{type:'text/csv'}));a2.download='sponsored-products-sample.csv';a2.click();
+  });
+
+  // Column resizing utilities
+  function setColWidth(table, idx, width){
+    const rows = table.rows; for(let r=0;r<rows.length;r++){ const cell=rows[r].cells[idx]; if(cell){ cell.style.width = width+'px'; }}
+  }
+  function saveColWidth(mode, idx, width){
+    if(mode==='parent'){ (window._colWidthsParent ||= {})[idx]=width; } else { (window._colWidthsChild ||= {})[idx]=width; }
+  }
+  function getColWidths(mode){ return mode==='parent' ? (window._colWidthsParent||{}) : (window._colWidthsChild||{}); }
+  function enableColumnResize(container, mode){
+    const table = container.querySelector('table'); if(!table||!table.tHead) return;
+    const ths = Array.from(table.tHead.rows[0].cells);
+    // apply cached widths first
+    const cache = getColWidths(mode);
+    Object.keys(cache).forEach(i=> setColWidth(table, +i, cache[i]));
+    ths.forEach((th,i)=>{
+      const handle = document.createElement('span');
+      handle.className='col-resize-handle';
+      th.appendChild(handle);
+      handle.addEventListener('mousedown', (e)=>{
+        e.preventDefault();
+        const startX = e.pageX; const startW = th.offsetWidth;
+        function onMove(ev){ const w = Math.max(60, startW + (ev.pageX - startX)); setColWidth(table,i,w); saveColWidth(mode,i,w); document.body.style.cursor='col-resize'; }
+        function onUp(){ document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.body.style.cursor=''; }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    });
+  }
+
+  // Surface runtime errors to the page
+  window.addEventListener('error', (e)=>{ try{ qs('errors').textContent = 'Script error: ' + (e.message||''); }catch(_){} });
   </script>
 </body>
 </html>

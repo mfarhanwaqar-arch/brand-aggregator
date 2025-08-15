@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ads Acceleration Tools — For Sellers</title>
+
   <!-- Social preview -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="Ads Acceleration Tools — For Sellers">
@@ -11,35 +12,38 @@
   <meta property="og:image" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/assets/img/og-image.png">
   <meta property="og:url" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Ads Acceleration Tools — For Sellers">
-  <meta name="twitter:description" content="Free PPC utilities for Amazon sellers.">
-  <meta name="twitter:image" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/assets/img/og-image.png">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Poppins:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <!-- Apply saved theme variables (from theme.html) -->
+  <!-- Apply saved theme (colors, bg, font) -->
   <script>
     (function(){
       try{
         const vars = JSON.parse(localStorage.getItem('ac_theme_vars')||'null');
-        if(vars){
-          const r = document.documentElement;
-          Object.entries(vars).forEach(([k,v])=>r.style.setProperty(`--${k}`, v));
-        }
+        if (vars) Object.entries(vars).forEach(([k,v])=>document.documentElement.style.setProperty(`--${k}`, v));
+        const appBg = localStorage.getItem('ac_theme_appbg');
+        if (appBg) document.documentElement.style.setProperty('--app-bg', appBg);
+        const font = localStorage.getItem('ac_theme_font');
+        if (font) document.documentElement.style.setProperty('--font', font);
       }catch(e){}
     })();
   </script>
 
   <style>
-    :root{--bg:#0b0d10;--panel:#11151a;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--brand:#22c55e;--ac:#0ea5e9}
+    :root{
+      --bg:#0b0d10;--panel:#11151a;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--brand:#22c55e;--ac:#0ea5e9;
+      --app-bg: linear-gradient(120deg,#0b0d10,#0f1720);
+      --font: Inter, system-ui, Arial, sans-serif;
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:linear-gradient(120deg,#0b0d10,#0f1720);color:var(--text)}
+    body{margin:0;font-family:var(--font);background:var(--app-bg);color:var(--text)}
     .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
     header h1{margin:0 0 6px;font-size:32px}
     .muted{color:var(--muted)}
     .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0 16px}
-    .btn{appearance:none;border:1px solid #2a3441;background:#0b1220;color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;display:inline-block}
+    .btn{appearance:none;border:1px solid #2a3441;background:#0b1220;color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;display:inline-block;cursor:pointer}
     .btn.primary{background:linear-gradient(135deg,var(--ac),var(--brand));border:none;color:#0b0d10}
     input[type="search"]{flex:1;min-width:220px;background:#0b1220;border:1px solid #2a3441;color:var(--text);border-radius:10px;padding:10px}
     .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px}
@@ -68,7 +72,7 @@
       <div class="top">
         <a class="btn" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9?pvs=143&utm_source=github&utm_medium=hub" target="_blank" rel="noopener">Live Case Study</a>
         <a class="btn primary" href="https://calendly.com/m-farhanwaqar/30min?utm_source=github&utm_medium=hub" target="_blank" rel="noopener">Book a Call</a>
-        <a class="btn" href="./theme.html">Theme</a>
+        <a class="btn" href="./theme.html" title="Theme (Alt+T)">Theme</a>
         <input id="q" type="search" placeholder="Search tools…" />
       </div>
     </header>
@@ -80,11 +84,8 @@
   <script>
     const GH_USER='mfarhanwaqar-arch';
     const GH_REPO='brand-aggregator';
-    // Show developer-only controls (e.g., Code button) when ?dev=1 or localStorage dev=1
     const DEV = (new URLSearchParams(location.search)).get('dev')==='1' || localStorage.getItem('dev')==='1';
-
-    const grid=document.getElementById('grid');
-    const q=document.getElementById('q');
+    const grid=document.getElementById('grid'); const q=document.getElementById('q');
 
     async function loadTools(){
       try{
@@ -99,11 +100,11 @@
 
     function card(t){
       const live=t.status==='live';
-      const statusLabel=t.status==='live'?'Live':t.status==='coming-soon'?'Coming soon':'Private';
-      const statusClass=t.status==='live'?'':'status-'+t.status;
-      const href = live ? (t.href || `tools/${t.slug}/`) : null;
+      const statusLabel= live ? 'Live' : (t.status==='coming-soon'?'Coming soon':'Private');
+      const statusClass= live ? '' : 'status-'+t.status;
+      const href = live ? (t.href || `tools/${t.slug}/`) : null;   // supports direct links
       const code=`https://github.com/${GH_USER}/${GH_REPO}/tree/main/tools/${t.slug}`;
-      const features = Array.isArray(t.features) && t.features.length ? `<ul class="features">${t.features.map(f=>`<li>${f}</li>`).join('')}</ul>` : '';
+      const features = Array.isArray(t.features)&&t.features.length?`<ul class="features">${t.features.map(f=>`<li>${f}</li>`).join('')}</ul>`:'';
       const thumb = t.thumb ? `<img class="thumb" alt="${t.name}" src="${t.thumb}">` : '';
       return `<article class="card ${statusClass}">
         ${thumb}
@@ -114,7 +115,7 @@
         <div class="tags">${(t.tags||[]).map(x=>`<span class="tag">${x}</span>`).join('')}</div>
         <div class="actions">
           ${href?`<a class="btn primary" href="${href}">Open</a>`:`<button class="btn" disabled>Coming soon</button>`}
-          ${DEV ? `<a class="btn" target="_blank" rel="noopener" href="${code}">Code</a>` : ''}
+          ${DEV?`<a class="btn" target="_blank" rel="noopener" href="${code}">Code</a>`:''}
           ${href?`<button class="btn ghost" data-share="${t.slug}">Share</button>`:''}
         </div>
       </article>`;
@@ -130,11 +131,7 @@
       attachShareHandlers();
     }
 
-    (async()=>{
-      const tools=await loadTools();
-      render(tools);
-      q.addEventListener('input',()=>render(tools));
-    })();
+    (async()=>{ const tools=await loadTools(); render(tools); q.addEventListener('input',()=>render(tools)); })();
 
     function toast(msg){
       let el=document.querySelector('.toast');
@@ -147,16 +144,10 @@
       if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(()=>toast('Link copied')).catch(()=>{ prompt('Copy this link', url); }); return; }
       prompt('Copy this link', url);
     }
-    function attachShareHandlers(){
-      document.querySelectorAll('[data-share]').forEach(btn=>{
-        btn.addEventListener('click',()=>shareTool(btn.dataset.share));
-      });
-    }
+    function attachShareHandlers(){ document.querySelectorAll('[data-share]').forEach(btn=>btn.addEventListener('click',()=>shareTool(btn.dataset.share))); }
 
-    // Shortcut: Alt+T to open Theme page
-    window.addEventListener('keydown', e=>{
-      if(e.altKey && (e.key==='t' || e.key==='T')) location.href='./theme.html';
-    });
+    // Shortcut to Theme page
+    window.addEventListener('keydown', e=>{ if(e.altKey && (e.key==='t' || e.key==='T')) location.href='./theme.html'; });
   </script>
 </body>
 </html>

@@ -18,17 +18,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-<script>
-  (function(){
-    try{
-      const vars = JSON.parse(localStorage.getItem('ac_theme_vars')||'null');
-      if(vars){
-        const r = document.documentElement;
-        Object.entries(vars).forEach(([k,v])=>r.style.setProperty(`--${k}`, v));
-      }
-    }catch(e){}
-  })();
-</script>
+  <!-- Apply saved theme variables (from theme.html) -->
+  <script>
+    (function(){
+      try{
+        const vars = JSON.parse(localStorage.getItem('ac_theme_vars')||'null');
+        if(vars){
+          const r = document.documentElement;
+          Object.entries(vars).forEach(([k,v])=>r.style.setProperty(`--${k}`, v));
+        }
+      }catch(e){}
+    })();
+  </script>
 
   <style>
     :root{--bg:#0b0d10;--panel:#11151a;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--brand:#22c55e;--ac:#0ea5e9}
@@ -67,6 +68,7 @@
       <div class="top">
         <a class="btn" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9?pvs=143&utm_source=github&utm_medium=hub" target="_blank" rel="noopener">Live Case Study</a>
         <a class="btn primary" href="https://calendly.com/m-farhanwaqar/30min?utm_source=github&utm_medium=hub" target="_blank" rel="noopener">Book a Call</a>
+        <a class="btn" href="./theme.html">Theme</a>
         <input id="q" type="search" placeholder="Search tools…" />
       </div>
     </header>
@@ -150,6 +152,11 @@
         btn.addEventListener('click',()=>shareTool(btn.dataset.share));
       });
     }
+
+    // Shortcut: Alt+T to open Theme page
+    window.addEventListener('keydown', e=>{
+      if(e.altKey && (e.key==='t' || e.key==='T')) location.href='./theme.html';
+    });
   </script>
 </body>
 </html>

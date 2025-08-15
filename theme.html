@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Theme • ads crafted</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b0d10;--panel:#11151a;--text:#e6e7eb;--muted:#a7b0be;--accent:#5b8cfa;--accent2:#86efac;--r:16px}
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);
+      background:radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%),linear-gradient(180deg,#0b0d10 0%,#090b0f 100%);
+      display:grid;grid-template-rows:auto 1fr auto;min-height:100vh}
+    header,footer{padding:16px 20px;color:var(--muted)}
+    header a, footer a{color:#9ec1ff;text-decoration:none}
+    .wrap{padding:24px 20px;max-width:1000px;margin:0 auto}
+    h1{margin:6px 0 4px;font-size:24px}
+    p.sub{margin:0 0 16px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+    .card{background:linear-gradient(180deg,#121720 0%,#0f141c 100%);border:1px solid #1f2937;border-radius:var(--r);padding:18px}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .name{font-weight:700}
+    .swatches{display:flex;gap:6px}
+    .dot{width:18px;height:18px;border-radius:999px;border:1px solid #0003}
+    .btn{margin-top:12px;width:100%;cursor:pointer;border:0;border-radius:12px;padding:12px 14px;font-weight:700;
+      background:var(--accent);color:#081222}
+    .active{background:#16a34a;color:#03140c}
+    .note{margin-top:6px;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <header>← <a href="./app.html">Back to app</a></header>
+  <div class="wrap">
+    <h1>Choose a theme</h1>
+    <p class="sub">Your choice is saved in the browser and applies to all pages.</p>
+
+    <div id="grid" class="grid"></div>
+    <p id="msg" class="note"></p>
+  </div>
+  <footer><a href="./index.html">Email gate</a> • <a href="./app.html">Main app</a></footer>
+
+  <script>
+    const THEMES = {
+      midnight:{ // current default
+        bg:"#0b0d10", panel:"#11151a", text:"#e6e7eb", muted:"#a7b0be", accent:"#5b8cfa", accent2:"#86efac"
+      },
+      light:{
+        bg:"#f8fafc", panel:"#ffffff", text:"#0b1020", muted:"#64748b", accent:"#3b82f6", accent2:"#22c55e"
+      },
+      indigo:{
+        bg:"#0b1020", panel:"#0f1630", text:"#e8ecff", muted:"#a5b4fc", accent:"#8b5cf6", accent2:"#34d399"
+      },
+      emerald:{
+        bg:"#04110e", panel:"#0b1a16", text:"#e6ffee", muted:"#8bb3a8", accent:"#10b981", accent2:"#60a5fa"
+      },
+      rose:{
+        bg:"#130b10", panel:"#1a1116", text:"#ffe6ef", muted:"#f5a2b4", accent:"#fb7185", accent2:"#93c5fd"
+      }
+    };
+
+    const grid = document.getElementById('grid');
+    const msg  = document.getElementById('msg');
+    const current = (localStorage.getItem('ac_theme')||'midnight');
+
+    function applyTheme(vars){
+      const r=document.documentElement;
+      Object.entries(vars).forEach(([k,v])=>r.style.setProperty(`--${k}`,v));
+      localStorage.setItem('ac_theme_vars', JSON.stringify(vars));
+    }
+
+    function pickTheme(key){
+      localStorage.setItem('ac_theme', key);
+      applyTheme(THEMES[key]);
+      msg.textContent = `Theme set to “${key}”. Open the app to see it applied.`;
+      [...document.querySelectorAll('.btn')].forEach(b=>b.classList.remove('active'));
+      const btn=document.getElementById('btn-'+key); if(btn) btn.classList.add('active');
+    }
+
+    // Render cards
+    grid.innerHTML = Object.entries(THEMES).map(([key,vars])=>{
+      const dots = [vars.bg,vars.panel,vars.text,vars.accent,vars.accent2]
+        .map(c=>`<span class="dot" style="background:${c}"></span>`).join('');
+      const active = current===key ? 'active' : '';
+      return `<div class="card">
+        <div class="row"><div class="name">${key}</div><div class="swatches">${dots}</div></div>
+        <button id="btn-${key}" class="btn ${active}" onclick="pickTheme('${key}')">${active?'Active':'Use theme'}</button>
+      </div>`;
+    }).join('');
+
+    // Apply current theme immediately on this page
+    const savedVars = localStorage.getItem('ac_theme_vars');
+    if (savedVars) applyTheme(JSON.parse(savedVars));
+    else applyTheme(THEMES[current]);
+  </script>
+</body>
+</html>

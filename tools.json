@@ -27,3 +27,9 @@
     "thumb": "assets/img/asin.png"
   }
 ]
+{
+  "id": "theme",
+  "name": "Theme",
+  "description": "Pick the UI theme for all tools.",
+  "href": "/theme.html"
+}

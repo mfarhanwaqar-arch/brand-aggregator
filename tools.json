@@ -25,11 +25,14 @@
       "Spot high-spend / low-return ASINs"
     ],
     "thumb": "assets/img/asin.png"
+  },
+  {
+    "slug": "theme",
+    "name": "Theme",
+    "desc": "Pick the UI theme for all tools.",
+    "status": "live",
+    "href": "./theme.html",
+    "tags": ["UI"],
+    "features": ["Dark & light palettes", "Saved in browser"]
   }
 ]
-{
-  "id": "theme",
-  "name": "Theme",
-  "description": "Pick the UI theme for all tools.",
-  "href": "/theme.html"
-}

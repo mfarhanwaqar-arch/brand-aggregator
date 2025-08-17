@@ -5,194 +5,86 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ads Acceleration Tools — For Sellers</title>
 
-  <!-- Social preview -->
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Ads Acceleration Tools — For Sellers">
-  <meta property="og:description" content="Free PPC utilities for Amazon sellers. Open a tool or browse the gallery.">
-  <meta property="og:image" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/assets/img/og-image.png">
-  <meta property="og:url" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/">
-  <meta name="twitter:card" content="summary_large_image">
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Poppins:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <!-- Apply saved theme -->
   <script>
     (function(){
       try{
-        const vars = JSON.parse(localStorage.getItem('ac_theme_vars')||'null');
-        if (vars) Object.entries(vars).forEach(([k,v])=>document.documentElement.style.setProperty(`--${k}`, v));
-        const appBg = localStorage.getItem('ac_theme_appbg');
-        if (appBg) document.documentElement.style.setProperty('--app-bg', appBg);
-        const font = localStorage.getItem('ac_theme_font');
-        if (font) document.documentElement.style.setProperty('--font', font);
+        const vars=JSON.parse(localStorage.getItem('ac_theme_vars')||'null');
+        if(vars)Object.entries(vars).forEach(([k,v])=>document.documentElement.style.setProperty(`--${k}`,v));
+        const appBg=localStorage.getItem('ac_theme_appbg');if(appBg)document.documentElement.style.setProperty('--app-bg',appBg);
+        const font=localStorage.getItem('ac_theme_font');if(font)document.documentElement.style.setProperty('--font',font);
       }catch(e){}
     })();
   </script>
 
   <style>
     :root{
-      --bg:#0b0d10; --panel:#11151a; --muted:#94a3b8; --text:#e5e7eb; --line:#1f2937; --brand:#22c55e; --ac:#0ea5e9;
-      --app-bg: linear-gradient(120deg,#0b0d10,#0f1720);
-      --font: Inter, system-ui, Arial, sans-serif;
+      --bg:#0b0d10;--panel:#11151a;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--brand:#22c55e;--ac:#0ea5e9;
+      --app-bg:linear-gradient(120deg,#0b0d10,#0f1720);--font:Inter,system-ui,Arial,sans-serif;
     }
-    *{box-sizing:border-box}
     body{margin:0;font-family:var(--font);background:var(--app-bg);color:var(--text)}
-    a{color:inherit}
-
     .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
-    header h1{margin:0 0 6px;font-size:32px}
-    .muted{color:var(--muted)}
-    .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0 16px}
-
-    .btn{
-      appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--text);
-      padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;display:inline-block;cursor:pointer
-    }
+    .btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;cursor:pointer}
     .btn.primary{background:linear-gradient(135deg,var(--ac),var(--brand));border:none;color:#0b0d10}
-    .btn.ghost{background:transparent;border:1px dashed var(--line)}
-
-    input[type="search"]{
-      flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line);
-      color:var(--text);border-radius:10px;padding:10px
-    }
-
+    input[type="search"]{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px}
     .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px}
+    .card{border-radius:16px;padding:16px}
 
-    /* Base card */
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
-    .card h3{margin:6px 0;font-size:18px}
-    .card img.thumb{
-      width:100%;height:120px;object-fit:cover;border-radius:12px;margin-bottom:10px;
-      border:1px solid var(--line);background:var(--panel)
-    }
-    .features{margin:8px 0 0 18px;color:var(--muted);padding-left:0}
-    .features li{margin:4px 0}
-    .pill{display:inline-block;border:1px solid var(--line);background:transparent;border-radius:999px;padding:4px 8px;font-size:12px;color:inherit}
-    .tags{margin:8px 0;display:flex;gap:6px;flex-wrap:wrap}
-    .tag{border:1px solid var(--line);background:transparent;border-radius:999px;padding:2px 8px;font-size:11px;color:inherit;opacity:.8}
-    .actions{display:flex;gap:8px;align-items:center;margin-top:8px}
+    /* Card variants */
+    .card.red   {background:#fee2e2!important;border:1px solid #fca5a5!important;color:#7f1d1d!important;}
+    .card.green {background:#dcfce7!important;border:1px solid #86efac!important;color:#064e3b!important;}
+    .card.blue  {background:#dbeafe!important;border:1px solid #93c5fd!important;color:#1e3a8a!important;}
+    .card.yellow{background:#fef9c3!important;border:1px solid #fde047!important;color:#78350f!important;}
 
-    /* Colored card variants (dashboard vibe) */
-    .card.red   { background:#fee2e2; border-color:#fca5a5; color:#7f1d1d; }
-    .card.green { background:#dcfce7; border-color:#86efac; color:#064e3b; }
-    .card.blue  { background:#dbeafe; border-color:#93c5fd; color:#1e3a8a; }
-    .card.yellow{ background:#fef9c3; border-color:#fde047; color:#78350f; }
-
-    /* Make inner elements harmonize on colored cards */
-    .card.red .thumb, .card.green .thumb, .card.blue .thumb, .card.yellow .thumb{
-      background:transparent;border-color:currentColor;opacity:.9
-    }
-    .card.red .features, .card.green .features, .card.blue .features, .card.yellow .features{
-      color:inherit; opacity:.85
-    }
-    .card.red .pill, .card.green .pill, .card.blue .pill, .card.yellow .pill,
-    .card.red .tag,  .card.green .tag,  .card.blue .tag,  .card.yellow .tag{
-      border-color: currentColor;
-    }
-
-    .status-coming-soon{opacity:.85}
-    .status-private{opacity:.6}
-
-    footer{margin:28px 0 10px;color:var(--muted);font-size:12px}
+    .card.red .muted,.card.green .muted,.card.blue .muted,.card.yellow .muted,
+    .card.red .features,.card.green .features,.card.blue .features,.card.yellow .features{color:inherit!important;opacity:.85}
+    .card.red .tag,.card.green .tag,.card.blue .tag,.card.yellow .tag{border-color:currentColor;color:inherit!important}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>Ads Acceleration Tools <span class="muted" style="font-weight:600">(For Sellers)</span></h1>
-      <p class="muted" style="margin:0 0 8px">Pick a tool below to get started. Use the search to find tools by name or tag.</p>
-      <div class="top">
-        <a class="btn" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9?pvs=143&utm_source=github&utm_medium=hub" target="_blank" rel="noopener">Live Case Study</a>
-        <a class="btn primary" href="https://calendly.com/m-farhanwaqar/30min?utm_source=github&utm_medium=hub" target="_blank" rel="noopener">Book a Call</a>
-        <a class="btn" href="./theme.html" title="Theme (Alt+T)">Theme</a>
-        <input id="q" type="search" placeholder="Search tools…" />
+      <h1>Ads Acceleration Tools <span class="muted">(For Sellers)</span></h1>
+      <div class="top" style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">
+        <a class="btn" href="#">Live Case Study</a>
+        <a class="btn primary" href="#">Book a Call</a>
+        <a class="btn" href="./theme.html">Theme</a>
+        <input id="q" type="search" placeholder="Search tools…"/>
       </div>
     </header>
-
-    <main id="grid" class="grid" aria-live="polite"></main>
-    <footer>© 2025 M. Farhan Waqar • <a href="https://github.com/mfarhanwaqar-arch/brand-aggregator" class="muted" target="_blank" rel="noopener">GitHub</a></footer>
+    <main id="grid" class="grid"></main>
+    <footer style="margin:28px 0 10px;color:var(--muted);font-size:12px">© 2025 • GitHub</footer>
   </div>
 
   <script>
-    const GH_USER='mfarhanwaqar-arch';
-    const GH_REPO='brand-aggregator';
-    const DEV = (new URLSearchParams(location.search)).get('dev')==='1' || localStorage.getItem('dev')==='1';
-    const grid=document.getElementById('grid'); const q=document.getElementById('q');
-
-    async function loadTools(){
-      try{
-        const res=await fetch('tools.json',{cache:'no-store'});
-        if(!res.ok) throw new Error('tools.json not found');
-        return await res.json();
-      }catch(e){
-        grid.innerHTML=`<div class="card red"><h3>Could not load tools</h3><p>${e.message}. Make sure <code>tools.json</code> exists at the repo root.</p></div>`;
-        return [];
-      }
-    }
+    const grid=document.getElementById('grid'),q=document.getElementById('q');
 
     function variantFor(slug){
-      // deterministic color by slug (not random each load)
-      const variants=["red","green","blue","yellow"];
-      let hash=0; for(let i=0;i<slug.length;i++) hash=(hash*31 + slug.charCodeAt(i))>>>0;
-      return variants[hash % variants.length];
+      const v=["red","green","blue","yellow"];
+      let h=0;for(let i=0;i<slug.length;i++)h=(h*31+slug.charCodeAt(i))>>>0;
+      return v[h%v.length];
     }
 
     function card(t){
-      const live=t.status==='live';
-      const statusLabel= live ? 'Live' : (t.status==='coming-soon'?'Coming soon':'Private');
-      const statusClass= live ? '' : 'status-'+t.status;
-
-      // color variant
-      const variant = variantFor(t.slug || t.name || '');
-
-      const href = live ? (t.href || `tools/${t.slug}/`) : null;
-      const code=`https://github.com/${GH_USER}/${GH_REPO}/tree/main/tools/${t.slug}`;
-      const features = Array.isArray(t.features)&&t.features.length?`<ul class="features">${t.features.map(f=>`<li>${f}</li>`).join('')}</ul>`:'';
-      const thumb = t.thumb ? `<img class="thumb" alt="${t.name}" src="${t.thumb}">` : '';
-      return `<article class="card ${statusClass} ${variant}">
-        ${thumb}
-        <span class="pill">Live</span>
+      const variant=variantFor(t.slug||t.name||"");
+      return `<article class="card ${variant}">
         <h3>${t.name}</h3>
-        <p class="muted" style="color:inherit;opacity:.85">${t.desc||''}</p>
-        ${features}
-        <div class="tags">${(t.tags||[]).map(x=>`<span class="tag">${x}</span>`).join('')}</div>
-        <div class="actions">
-          ${href?`<a class="btn primary" href="${href}">Open</a>`:`<button class="btn" disabled>Coming soon</button>`}
-          ${DEV?`<a class="btn" target="_blank" rel="noopener" href="${code}">Code</a>`:''}
-          ${href?`<button class="btn ghost" data-share="${t.slug}">Share</button>`:''}
-        </div>
+        <p class="muted">${t.desc||""}</p>
       </article>`;
     }
 
-    function render(all){
-      const query=(q.value||'').toLowerCase();
-      const rows=all.filter(t=>{
-        const hay=(t.name+' '+(t.tags||[]).join(' ')).toLowerCase();
-        return hay.includes(query);
-      });
-      grid.innerHTML=rows.map(card).join('');
-      attachShareHandlers();
-    }
+    const tools=[
+      {slug:"brand-aggregator",name:"Brand vs Non-Brand Aggregator",desc:"Upload CSV/XLSX and detect brand."},
+      {slug:"asin-performance",name:"ASIN Performance Analyzer",desc:"Merge Ad Console with Business Reports."},
+      {slug:"bulk-campaign",name:"Bulk Campaign Generator",desc:"Create Sponsored Products campaigns in bulk."},
+      {slug:"ranking-campaigns",name:"Ranking Campaigns",desc:"Root keyword SP setups."}
+    ];
 
-    (async()=>{ const tools=await loadTools(); render(tools); q.addEventListener('input',()=>render(tools)); })();
-
-    function toast(msg){
-      let el=document.querySelector('.toast');
-      if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
-      el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1500);
-    }
-    function shareTool(slug){
-      const url=new URL(`tools/${slug}/`, location.href).href;
-      if(navigator.share){ navigator.share({title:'Ads Acceleration Tools', url}).catch(()=>{}); return; }
-      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(()=>toast('Link copied')).catch(()=>{ prompt('Copy this link', url); }); return; }
-      prompt('Copy this link', url);
-    }
-    function attachShareHandlers(){ document.querySelectorAll('[data-share]').forEach(btn=>btn.addEventListener('click',()=>shareTool(btn.dataset.share))); }
-
-    // Shortcut to Theme page
-    window.addEventListener('keydown', e=>{ if(e.altKey && (e.key==='t' || e.key==='T')) location.href='./theme.html'; });
+    function render(){grid.innerHTML=tools.map(card).join("");}
+    render();
   </script>
 </body>
 </html>

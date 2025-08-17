@@ -1,111 +1,201 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Ads Acceleration Tools</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ads Acceleration Tools — For Sellers</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Apply saved theme (colors, bg, font) -->
+  <script>
+    (function(){
+      try{
+        const vars=JSON.parse(localStorage.getItem('ac_theme_vars')||'null');
+        if(vars)Object.entries(vars).forEach(([k,v])=>document.documentElement.style.setProperty(`--${k}`,v));
+        const appBg=localStorage.getItem('ac_theme_appbg'); if(appBg) document.documentElement.style.setProperty('--app-bg',appBg);
+        const font=localStorage.getItem('ac_theme_font'); if(font) document.documentElement.style.setProperty('--font',font);
+      }catch(e){}
+    })();
+  </script>
+
   <style>
-    body{margin:0;font-family:'Inter',sans-serif;background:var(--bg,#f9fafb);color:var(--text,#111);transition:.3s;}
-    header{padding:2rem 1rem;text-align:center;}
-    h1{margin:0;font-size:1.8rem;}
-    .actions{margin-top:.5rem;display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap;}
-    .btn{padding:.4rem .9rem;border-radius:.5rem;border:1px solid #ccc;cursor:pointer;background:#fff;}
-    .btn.primary{background:#2563eb;color:#fff;border:none;}
-    .btn.green{background:#16a34a;color:#fff;border:none;}
-    #grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;padding:1rem;max-width:1100px;margin:auto;}
-    .card{padding:1rem;border-radius:1rem;border:1px solid #ddd;box-shadow:0 2px 4px rgba(0,0,0,.06);}
-    .card h3{margin:.5rem 0;}
-    .muted{color:#555;font-size:.9rem;}
-    .features{font-size:.85rem;margin:.5rem 0 1rem;line-height:1.4;}
-    .tags{margin:.5rem 0;display:flex;flex-wrap:wrap;gap:.3rem;}
-    .tag{font-size:.75rem;padding:.2rem .5rem;border:1px solid #aaa;border-radius:.3rem;}
-    /* Variants */
-    .card.red   {background:#fee2e2;border-color:#fca5a5;color:#7f1d1d;}
-    .card.green {background:#dcfce7;border-color:#86efac;color:#064e3b;}
-    .card.blue  {background:#dbeafe;border-color:#93c5fd;color:#1e3a8a;}
-    .card.yellow{background:#fef9c3;border-color:#fde047;color:#78350f;}
+    :root{
+      --bg:#0b0d10; --panel:#11151a; --muted:#94a3b8; --text:#e5e7eb; --line:#1f2937; --brand:#22c55e; --ac:#0ea5e9;
+      --app-bg: linear-gradient(120deg,#0b0d10,#0f1720); --font: Inter, system-ui, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--font);background:var(--app-bg);color:var(--text)}
+    a{color:inherit}
+    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    header h1{margin:0 0 6px;font-size:32px}
+    .muted{color:var(--muted)}
+    .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0 16px}
+
+    .btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;display:inline-block;cursor:pointer}
+    .btn.primary{background:linear-gradient(135deg,var(--ac),var(--brand));border:none;color:#0b0d10}
+    .btn.ghost{background:transparent;border:1px dashed var(--line)}
+    input[type="search"]{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px}
+
+    .banner{display:none;margin:0 0 12px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel)}
+    .banner.show{display:block}
+
+    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px;min-height:140px}
+
+    /* Loading skeleton */
+    .skeleton{border-radius:16px;border:1px solid var(--line);background:var(--panel);height:120px;animation:pulse 1.2s infinite ease-in-out}
+    @keyframes pulse{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
+
+    /* Base card (variants override) */
+    .card{border-radius:16px;padding:16px;border:1px solid var(--line);background:var(--panel);color:var(--text);box-shadow:0 6px 22px rgba(0,0,0,.08)}
+    .card h3{margin:6px 0 2px;font-size:18px}
+    .features{margin:8px 0 0 18px;padding-left:0}
+    .features li{margin:4px 0}
+    .tags{margin:8px 0;display:flex;gap:6px;flex-wrap:wrap}
+    .tag{border:1px solid var(--line);background:transparent;border-radius:999px;padding:2px 8px;font-size:11px;color:inherit;opacity:.8}
+    .actions{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .pill{display:inline-block;border:1px solid var(--line);background:transparent;border-radius:999px;padding:4px 8px;font-size:12px;color:inherit}
+
+    /* Fixed color variants: Black, White, Red, Yellow */
+    .card.black  { background:#0b0d10 !important; border-color:#1f2937 !important; color:#f8fafc !important; }
+    .card.white  { background:#ffffff !important; border-color:#d1d5db !important; color:#111827 !important; box-shadow:0 8px 24px rgba(0,0,0,.08); }
+    .card.red    { background:#fee2e2 !important; border-color:#fca5a5 !important; color:#7f1d1d !important; }
+    .card.yellow { background:#fef9c3 !important; border-color:#fde047 !important; color:#78350f !important; }
+
+    /* Make inner text adopt the variant */
+    .card.black  .muted, .card.white  .muted, .card.red  .muted, .card.yellow  .muted{ color:inherit !important; opacity:.85 }
+    .card.black  .tag,   .card.white  .tag,   .card.red .tag,   .card.yellow .tag{ border-color:currentColor; color:inherit !important }
+
+    footer{margin:28px 0 10px;color:var(--muted);font-size:12px}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Ads Acceleration Tools <span style="color:#6b7280">(For Sellers)</span></h1>
-    <p>Pick a tool below to get started. Use the search to find tools by name or tag.</p>
-    <div class="actions">
-      <button class="btn">Live Case Study</button>
-      <button class="btn green">Book a Call</button>
-      <a class="btn" href="theme.html">Theme</a>
-      <input id="search" type="search" placeholder="Search tools..."/>
-    </div>
-  </header>
+  <div class="wrap">
+    <header>
+      <h1>Ads Acceleration Tools <span class="muted" style="font-weight:600">(For Sellers)</span></h1>
+      <p class="muted" style="margin:0 0 8px">Pick a tool below to get started. Use the search to find tools by name or tag.</p>
+      <div class="top">
+        <a class="btn" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9?pvs=143&utm_source=github&utm_medium=hub" target="_blank" rel="noopener">Live Case Study</a>
+        <a class="btn primary" href="https://calendly.com/m-farhanwaqar/30min?utm_source=github&utm_medium=hub" target="_blank" rel="noopener">Book a Call</a>
+        <a class="btn" href="./theme.html" title="Theme (Alt+T)">Theme</a>
+        <input id="q" type="search" placeholder="Search tools…" />
+      </div>
+      <div id="banner" class="banner"></div>
+    </header>
 
-  <main id="grid"></main>
+    <main id="grid" class="grid" aria-live="polite">
+      <!-- Loading placeholders -->
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+    </main>
 
-  <footer style="text-align:center;padding:1rem;font-size:.8rem;color:#555;">
-    © 2025 M. Farhan Waqar • <a href="https://github.com" target="_blank">GitHub</a>
-  </footer>
+    <footer>© 2025 M. Farhan Waqar • <a href="https://github.com/mfarhanwaqar-arch/brand-aggregator" class="muted" target="_blank" rel="noopener">GitHub</a></footer>
+  </div>
 
   <script>
-    // Example data
-    const tools = [
-      {
-        slug:"brand-aggregator",
-        name:"Brand vs Non-Brand Aggregator",
-        desc:"Upload CSV/XLSX, detect brand via name + ASINs, and compare ACOS/ROAS by segment with exportable insights.",
-        tags:["Amazon","Sponsored Products","Search Terms"],
-        features:["Brand classification for focused insights","Market penetration vs competitors","Benchmarking across query types","Budget recommendations from results"],
-        status:"live"
-      },
-      {
-        slug:"asin-performance",
-        name:"ASIN Performance Analyzer",
-        desc:"Merge Ad Console exports with Business Reports to estimate TACoS and revenue contribution by ASIN.",
-        tags:["Amazon","Sponsored Products","ASIN Analytics"],
-        features:["Combine Ad Console + BR data","TACoS and contribution by ASIN","Surface high-spend / low-return items"],
-        status:"live"
-      },
-      {
-        slug:"bulk-generator",
-        name:"Bulk Campaign Generator",
-        desc:"Create Sponsored Products campaigns in bulk with single/multi-keyword options, match-type isolation, and auto-negatives.",
-        tags:["Amazon","Sponsored Products","PPC"],
-        features:["Bulk creation for SP campaigns","Isolation + auto-negatives across match types","Export campaign-ready bulk sheets"],
-        status:"live"
-      }
+    const GH_USER='mfarhanwaqar-arch';
+    const GH_REPO='brand-aggregator';
+    const DEV=(new URLSearchParams(location.search)).get('dev')==='1'||localStorage.getItem('dev')==='1';
+
+    const grid=document.getElementById('grid');
+    const q=document.getElementById('q');
+    const banner=document.getElementById('banner');
+
+    // Built-in fallback list so the page never goes blank
+    const TOOLS_FALLBACK=[
+      {"slug":"brand-aggregator","name":"Brand vs Non-Brand Aggregator","desc":"Upload CSV/XLSX and detect brand.","status":"live","tags":["Amazon","SP","Search Term"]},
+      {"slug":"asin-performance","name":"ASIN Performance Analyzer","desc":"Merge Ad Console with Business Reports.","status":"live","tags":["KPI","P&L"]},
+      {"slug":"bulk-campaign","name":"Bulk Campaign Generator","desc":"Create Sponsored Products campaigns in bulk.","status":"live","tags":["Bulk","SP"]},
+      {"slug":"ranking-campaigns","name":"Ranking Campaigns","desc":"Root keyword SP setups.","status":"live","tags":["Ranking","SP"]}
     ];
 
-    const grid=document.getElementById("grid");
-    function variantFor(slug){
-      const variants=["red","green","blue","yellow"];
-      let h=0;for(let i=0;i<slug.length;i++)h=(h*31+slug.charCodeAt(i))>>>0;
-      return variants[h%variants.length];
-    }
-    function render(tools){
-      grid.innerHTML="";
-      for(const t of tools){
-        const v=variantFor(t.slug);
-        grid.innerHTML+=`
-          <article class="card ${v}">
-            <span class="pill">${t.status==="live"?"Live":"Coming Soon"}</span>
-            <h3>${t.name}</h3>
-            <p class="muted">${t.desc}</p>
-            <ul class="features">${(t.features||[]).map(f=>`<li>${f}</li>`).join("")}</ul>
-            <div class="tags">${t.tags.map(x=>`<span class="tag">${x}</span>`).join("")}</div>
-            <button class="btn primary">Open</button>
-          </article>`;
+    async function loadTools(){
+      try{
+        const res=await fetch('./tools.json',{cache:'no-store'});
+        if(!res.ok) throw new Error(res.status+' '+res.statusText);
+        const data=await res.json();
+        if(!Array.isArray(data) || data.length===0) throw new Error('tools.json empty or invalid');
+        return data;
+      }catch(e){
+        console.warn('tools.json load failed, using fallback:', e);
+        showBanner('Could not load <code>tools.json</code>. Showing built-in list.');
+        return TOOLS_FALLBACK;
       }
     }
-    render(tools);
 
-    // Search
-    document.getElementById("search").addEventListener("input",e=>{
-      const q=e.target.value.toLowerCase();
-      render(tools.filter(t=>
-        t.name.toLowerCase().includes(q) ||
-        t.desc.toLowerCase().includes(q) ||
-        t.tags.some(x=>x.toLowerCase().includes(q))
-      ));
-    });
+    function showBanner(msg){
+      banner.innerHTML=msg;
+      banner.className='banner show';
+    }
+
+    // Fixed order: Black, White, Red, Yellow, repeat
+    const fixedColors=["black","white","red","yellow"];
+    const fixedVariant = i => fixedColors[i % fixedColors.length];
+
+    function openHref(t){
+      // Prefer explicit link in JSON; else assume GitHub Pages folder structure
+      return t.href ? t.href : `./tools/${t.slug}/`;
+    }
+
+    function card(t, i){
+      const live=t.status==='live';
+      const statusLabel= live ? 'Live' : (t.status==='coming-soon'?'Coming soon':'Private');
+      const statusClass= live ? '' : 'status-'+t.status;
+      const variant=fixedVariant(i);
+
+      const href = openHref(t);
+      const features = Array.isArray(t.features)&&t.features.length
+        ? `<ul class="features">${t.features.map(f=>`<li>${f}</li>`).join('')}</ul>`:'';
+      const tags = (t.tags||[]).map(x=>`<span class="tag">${x}</span>`).join('');
+
+      return `<article class="card ${statusClass} ${variant}">
+        <span class="pill">${statusLabel}</span>
+        <h3>${t.name}</h3>
+        <p class="muted">${t.desc||''}</p>
+        ${features}
+        <div class="tags">${tags}</div>
+        <div class="actions">
+          ${live?`<a class="btn primary" href="${href}">Open</a>`:`<button class="btn" disabled>Coming soon</button>`}
+          ${DEV?`<a class="btn" target="_blank" rel="noopener" href="https://github.com/${GH_USER}/${GH_REPO}/tree/main/tools/${t.slug}">Code</a>`:''}
+          ${live?`<button class="btn ghost" data-share="${t.slug}">Share</button>`:''}
+        </div>
+      </article>`;
+    }
+
+    function render(all){
+      const query=(q.value||'').toLowerCase();
+      const rows=all.filter(t=>{
+        const hay=(t.name+' '+(t.tags||[]).join(' ')+' '+(t.desc||'')).toLowerCase();
+        return hay.includes(query);
+      });
+      grid.innerHTML=rows.map((t,i)=>card(t,i)).join('');
+      attachShareHandlers();
+    }
+
+    (async()=>{
+      const tools=await loadTools();
+      render(tools);
+      q.addEventListener('input',()=>render(tools));
+    })();
+
+    function toast(msg){
+      let el=document.querySelector('.toast');
+      if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
+      el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1500);
+    }
+    function shareTool(slug){
+      const url=new URL(`tools/${slug}/`, location.href).href;
+      if(navigator.share){ navigator.share({title:'Ads Acceleration Tools', url}).catch(()=>{}); return; }
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(()=>toast('Link copied')).catch(()=>{ prompt('Copy this link', url); }); return; }
+      prompt('Copy this link', url);
+    }
+    function attachShareHandlers(){ document.querySelectorAll('[data-share]').forEach(btn=>btn.addEventListener('click',()=>shareTool(btn.dataset.share))); }
+
+    // Shortcut to Theme page
+    window.addEventListener('keydown', e=>{ if(e.altKey && (e.key==='t' || e.key==='T')) location.href='./theme.html'; });
   </script>
 </body>
 </html>

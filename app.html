@@ -39,11 +39,18 @@
     .btn.ghost{background:transparent;border:1px dashed var(--line)}
     input[type="search"]{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px}
 
-    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px}
+    .banner{display:none;margin:0 0 12px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel)}
+    .banner.show{display:block}
 
-    /* Base card reset (no theme colors here; variants control appearance) */
-    .card{border-radius:16px;padding:16px;border:1px solid var(--line);background:var(--panel);color:var(--text)}
-    .card h3{margin:6px 0;font-size:18px}
+    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px;min-height:140px}
+
+    /* Loading skeleton */
+    .skeleton{border-radius:16px;border:1px solid var(--line);background:var(--panel);height:120px;animation:pulse 1.2s infinite ease-in-out}
+    @keyframes pulse{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
+
+    /* Base card (variants override) */
+    .card{border-radius:16px;padding:16px;border:1px solid var(--line);background:var(--panel);color:var(--text);box-shadow:0 6px 22px rgba(0,0,0,.08)}
+    .card h3{margin:6px 0 2px;font-size:18px}
     .features{margin:8px 0 0 18px;padding-left:0}
     .features li{margin:4px 0}
     .tags{margin:8px 0;display:flex;gap:6px;flex-wrap:wrap}
@@ -53,13 +60,15 @@
 
     /* Fixed color variants: Black, White, Red, Yellow */
     .card.black  { background:#0b0d10 !important; border-color:#1f2937 !important; color:#f8fafc !important; }
-    .card.white  { background:#ffffff !important; border-color:#d1d5db !important; color:#111827 !important; }
+    .card.white  { background:#ffffff !important; border-color:#d1d5db !important; color:#111827 !important; box-shadow:0 8px 24px rgba(0,0,0,.08); }
     .card.red    { background:#fee2e2 !important; border-color:#fca5a5 !important; color:#7f1d1d !important; }
     .card.yellow { background:#fef9c3 !important; border-color:#fde047 !important; color:#78350f !important; }
 
     /* Make inner text adopt the variant */
     .card.black  .muted, .card.white  .muted, .card.red  .muted, .card.yellow  .muted{ color:inherit !important; opacity:.85 }
     .card.black  .tag,   .card.white  .tag,   .card.red .tag,   .card.yellow .tag{ border-color:currentColor; color:inherit !important }
+
+    footer{margin:28px 0 10px;color:var(--muted);font-size:12px}
   </style>
 </head>
 <body>
@@ -73,9 +82,16 @@
         <a class="btn" href="./theme.html" title="Theme (Alt+T)">Theme</a>
         <input id="q" type="search" placeholder="Search tools…" />
       </div>
+      <div id="banner" class="banner"></div>
     </header>
 
-    <main id="grid" class="grid" aria-live="polite"></main>
+    <main id="grid" class="grid" aria-live="polite">
+      <!-- Loading placeholders -->
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+    </main>
+
     <footer>© 2025 M. Farhan Waqar • <a href="https://github.com/mfarhanwaqar-arch/brand-aggregator" class="muted" target="_blank" rel="noopener">GitHub</a></footer>
   </div>
 
@@ -83,17 +99,35 @@
     const GH_USER='mfarhanwaqar-arch';
     const GH_REPO='brand-aggregator';
     const DEV=(new URLSearchParams(location.search)).get('dev')==='1'||localStorage.getItem('dev')==='1';
-    const grid=document.getElementById('grid'); const q=document.getElementById('q');
+    const grid=document.getElementById('grid');
+    const q=document.getElementById('q');
+    const banner=document.getElementById('banner');
+
+    // Built-in fallback list so the page never goes blank
+    const TOOLS_FALLBACK=[
+      {"slug":"brand-aggregator","name":"Brand vs Non-Brand Aggregator","desc":"Upload CSV/XLSX and detect brand.","status":"live","tags":["Amazon","SP","Search Term"]},
+      {"slug":"asin-performance","name":"ASIN Performance Analyzer","desc":"Merge Ad Console with Business Reports.","status":"live","tags":["KPI","P&L"]},
+      {"slug":"bulk-campaign","name":"Bulk Campaign Generator","desc":"Create Sponsored Products campaigns in bulk.","status":"live","tags":["Bulk","SP"]},
+      {"slug":"ranking-campaigns","name":"Ranking Campaigns","desc":"Root keyword SP setups.","status":"live","tags":["Ranking","SP"]}
+    ];
 
     async function loadTools(){
       try{
-        const res=await fetch('tools.json',{cache:'no-store'});
-        if(!res.ok) throw new Error('tools.json not found');
-        return await res.json();
+        const res=await fetch('./tools.json',{cache:'no-store'});
+        if(!res.ok) throw new Error(res.status+' '+res.statusText);
+        const data=await res.json();
+        if(!Array.isArray(data) || data.length===0) throw new Error('tools.json empty or invalid');
+        return {rows:data, from:'remote'};
       }catch(e){
-        grid.innerHTML=`<div class="card red"><h3>Could not load tools</h3><p>${e.message}. Make sure <code>tools.json</code> exists at the repo root.</p></div>`;
-        return [];
+        console.warn('tools.json load failed, using fallback:', e);
+        showBanner('Could not load <code>tools.json</code>. Showing built-in list.');
+        return {rows:TOOLS_FALLBACK, from:'fallback'};
       }
+    }
+
+    function showBanner(msg){
+      banner.innerHTML=msg;
+      banner.className='banner show';
     }
 
     // Fixed order: Black, White, Red, Yellow, repeat
@@ -102,4 +136,60 @@
 
     function card(t, i){
       const live=t.status==='live';
-      const stat
+      const statusLabel= live ? 'Live' : (t.status==='coming-soon'?'Coming soon':'Private');
+      const statusClass= live ? '' : 'status-'+t.status;
+      const variant=fixedVariant(i);
+
+      const href = live ? (t.href || `tools/${t.slug}/`) : null;
+      const code=`https://github.com/${GH_USER}/${GH_REPO}/tree/main/tools/${t.slug}`;
+      const features = Array.isArray(t.features)&&t.features.length?`<ul class="features">${t.features.map(f=>`<li>${f}</li>`).join('')}</ul>`:'';
+      const tags = (t.tags||[]).map(x=>`<span class="tag">${x}</span>`).join('');
+
+      return `<article class="card ${statusClass} ${variant}">
+        <span class="pill">${statusLabel}</span>
+        <h3>${t.name}</h3>
+        <p class="muted">${t.desc||''}</p>
+        ${features}
+        <div class="tags">${tags}</div>
+        <div class="actions">
+          ${href?`<a class="btn primary" href="${href}">Open</a>`:`<button class="btn" disabled>Coming soon</button>`}
+          ${DEV?`<a class="btn" target="_blank" rel="noopener" href="${code}">Code</a>`:''}
+          ${href?`<button class="btn ghost" data-share="${t.slug}">Share</button>`:''}
+        </div>
+      </article>`;
+    }
+
+    function render(all){
+      const query=(q.value||'').toLowerCase();
+      const rows=all.filter(t=>{
+        const hay=(t.name+' '+(t.tags||[]).join(' ')+' '+(t.desc||'')).toLowerCase();
+        return hay.includes(query);
+      });
+      grid.innerHTML=rows.map((t,i)=>card(t,i)).join('');
+      attachShareHandlers();
+    }
+
+    (async()=>{
+      const {rows}=await loadTools();
+      render(rows);
+      q.addEventListener('input',()=>render(rows));
+    })();
+
+    function toast(msg){
+      let el=document.querySelector('.toast');
+      if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
+      el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1500);
+    }
+    function shareTool(slug){
+      const url=new URL(`tools/${slug}/`, location.href).href;
+      if(navigator.share){ navigator.share({title:'Ads Acceleration Tools', url}).catch(()=>{}); return; }
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(()=>toast('Link copied')).catch(()=>{ prompt('Copy this link', url); }); return; }
+      prompt('Copy this link', url);
+    }
+    function attachShareHandlers(){ document.querySelectorAll('[data-share]').forEach(btn=>btn.addEventListener('click',()=>shareTool(btn.dataset.share))); }
+
+    // Shortcut to Theme page
+    window.addEventListener('keydown', e=>{ if(e.altKey && (e.key==='t' || e.key==='T')) location.href='./theme.html'; });
+  </script>
+</body>
+</html>

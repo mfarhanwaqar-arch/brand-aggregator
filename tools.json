@@ -40,5 +40,20 @@
       "Instant export to campaign-ready bulk sheets"
     ],
     "thumb": "assets/img/campaign.png"
+  },
+  {
+    "slug": "ranking-campaigns",
+    "name": "Ranking Campaigns (Root KW)",
+    "desc": "Build SP ranking setups around root keywords: single-keyword exact for precision + broad-modifier reach, with auto-negatives for clean isolation.",
+    "tags": ["Amazon", "Sponsored Products", "Ranking", "Keywords"],
+    "status": "live",
+    "features": [
+      "Rank smarter, spend smarter",
+      "Keyword groups that win (root KW clustering)",
+      "Single keyword focus (exact match SK campaigns)",
+      "Broad modifier reach for discovery",
+      "Auto negatives built-in (match-type isolation)"
+    ],
+    "thumb": "assets/img/ranking.png"
   }
 ]

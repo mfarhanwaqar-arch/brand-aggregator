@@ -2,58 +2,58 @@
   {
     "slug": "brand-aggregator",
     "name": "Brand vs Non-Brand Aggregator",
-    "desc": "Upload CSV/XLSX, detect brand via name + ASINs, see ACOS/ROAS by segment, and export per-term insights.",
-    "tags": ["Amazon", "Search Term", "SP"],
+    "desc": "Upload CSV/XLSX, detect brand via name + ASINs, and compare ACOS/ROAS by segment with exportable insights.",
+    "tags": ["Amazon", "Sponsored Products", "Search Terms"],
     "status": "live",
     "features": [
-      "Brand categorization for focused insights",
-      "Market penetration evaluation to gauge competition",
-      "Performance benchmarking across query types",
-      "Advertising budget optimization guided by results"
+      "Brand classification for focused insights",
+      "Market penetration vs. competitors",
+      "Benchmarking across query types",
+      "Budget recommendations from results"
     ],
-    "thumb": "assets/img/brand.png"
+    "thumb": "assets/img/tool-brand-aggregator.png"
   },
   {
     "slug": "asin-performance",
     "name": "ASIN Performance Analyzer",
-    "desc": "Merge Ad Console exports + Business Reports to estimate TACoS and contribution by ASIN.",
-    "tags": ["Amazon", "ASIN"],
+    "desc": "Merge Ad Console exports with Business Reports to estimate TACoS and revenue contribution by ASIN.",
+    "tags": ["Amazon", "Sponsored Products", "ASIN Analytics"],
     "status": "live",
     "features": [
-      "Combine Ad Console + Business Reports",
-      "Estimate TACoS per ASIN",
-      "Spot high-spend / low-return ASINs"
+      "Combine Ad Console + BR data",
+      "TACoS and contribution by ASIN",
+      "Surface high-spend / low-return items"
     ],
-    "thumb": "assets/img/asin.png"
+    "thumb": "assets/img/tool-asin-performance.png"
   },
   {
     "slug": "campaign-manager",
     "name": "Bulk Campaign Generator",
-    "desc": "Quickly generate Sponsored Product campaigns in bulk with single or multi-keyword options, match type isolation, and automated negations.",
+    "desc": "Create Sponsored Products campaigns in bulk with single/multi-keyword options, match-type isolation, and auto-negatives.",
     "tags": ["Amazon", "Sponsored Products", "PPC"],
     "status": "live",
     "features": [
-      "Bulk creation of Sponsored Product campaigns",
-      "Choose between single keyword or multi-keyword setups",
-      "Automatic isolation with negations across match types",
-      "Support for auto campaigns with product targeting (close match, loose match, substitutes, complements)",
-      "Instant export to campaign-ready bulk sheets"
+      "Bulk creation for SP campaigns",
+      "Single-KW or multi-KW setups",
+      "Isolation + auto-negatives across match types",
+      "Auto campaigns: close/loose/substitutes/complements",
+      "Export campaign-ready bulk sheets"
     ],
-    "thumb": "assets/img/campaign.png"
+    "thumb": "assets/img/tool-campaigns.png"
   },
   {
     "slug": "ranking-campaigns",
     "name": "Ranking Campaigns (Root KW)",
-    "desc": "Build SP ranking setups around root keywords: single-keyword exact for precision + broad-modifier reach, with auto-negatives for clean isolation.",
+    "desc": "Build root-keyword SP setups: single-keyword exact for precision plus broad-modifier reach, all auto-protected with negatives.",
     "tags": ["Amazon", "Sponsored Products", "Ranking", "Keywords"],
     "status": "live",
     "features": [
       "Rank smarter, spend smarter",
-      "Keyword groups that win (root KW clustering)",
-      "Single keyword focus (exact match SK campaigns)",
-      "Broad modifier reach for discovery",
-      "Auto negatives built-in (match-type isolation)"
+      "Root KW clustering that wins",
+      "Single-keyword exact campaigns",
+      "Broad-modifier reach for discovery",
+      "Auto-negatives for clean isolation"
     ],
-    "thumb": "assets/img/ranking.png"
+    "thumb": "assets/img/tool-ranking.png"
   }
 ]

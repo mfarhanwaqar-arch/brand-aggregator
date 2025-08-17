@@ -11,7 +11,7 @@
       "Benchmarking across query types",
       "Budget recommendations from results"
     ],
-    "thumb": "assets/img/tool-brand-aggregator.png"
+    "thumb": ""
   },
   {
     "slug": "asin-performance",
@@ -24,7 +24,7 @@
       "TACoS and contribution by ASIN",
       "Surface high-spend / low-return items"
     ],
-    "thumb": "assets/img/tool-asin-performance.png"
+    "thumb": ""
   },
   {
     "slug": "campaign-manager",
@@ -39,7 +39,7 @@
       "Auto campaigns: close/loose/substitutes/complements",
       "Export campaign-ready bulk sheets"
     ],
-    "thumb": "assets/img/tool-campaigns.png"
+    "thumb": ""
   },
   {
     "slug": "ranking-campaigns",
@@ -54,6 +54,6 @@
       "Broad-modifier reach for discovery",
       "Auto-negatives for clean isolation"
     ],
-    "thumb": "assets/img/tool-ranking.png"
+    "thumb": ""
   }
 ]

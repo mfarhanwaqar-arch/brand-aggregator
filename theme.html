@@ -41,8 +41,9 @@
     .section{background:#0b1220;border:1px solid #2a3441;border-radius:12px;padding:14px}
     .section h3{margin:0 0 10px;font-size:16px}
     .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
-    .swatch{height:36px;border-radius:999px;border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center}
-    .swatch .dot{width:16px;height:16px;border-radius:999px;border:1px solid #0002}
+    .swatch{height:44px;border-radius:12px;border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;gap:10px;padding:0 10px;justify-content:flex-start}
+    .swatch .dot{width:18px;height:18px;border-radius:999px;border:1px solid #0002;flex:none}
+    .swatch .name{font-size:12px;color:var(--muted)}
     .swatch.active{outline:2px solid var(--ac)}
     label.row{display:flex;align-items:center;gap:10px}
     select{background:#0b1220;border:1px solid #2a3441;color:var(--text);border-radius:8px;padding:8px 10px;width:100%}
@@ -97,20 +98,23 @@
   </div>
 
   <script>
-    // Preset palettes
+    // Preset palettes (kept "midnight" + added 3 new: sunrise, slate, ocean)
     const THEMES = {
+      // Your current dark theme
       midnight:{bg:"#0b0d10", panel:"#11151a", text:"#e5e7eb", muted:"#94a3b8", line:"#1f2937", brand:"#22c55e", ac:"#0ea5e9",
         gradient:"radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%),linear-gradient(180deg,#0b0d10 0%,#090b0f 100%)"},
-      charcoal:{bg:"#0a0a0b", panel:"#121214", text:"#e6e6e7", muted:"#a1a1aa", line:"#232327", brand:"#10b981", ac:"#38bdf8",
-        gradient:"linear-gradient(180deg,#0a0a0b,#141418)"},
-      indigo:{bg:"#0b1020", panel:"#0f1630", text:"#e8ecff", muted:"#a5b4fc", line:"#2a3150", brand:"#8b5cf6", ac:"#34d399",
-        gradient:"radial-gradient(900px 480px at 15% 10%,#192044 0%,#0b1020 60%)"},
-      emerald:{bg:"#04110e", panel:"#0b1a16", text:"#e6ffee", muted:"#8bb3a8", line:"#1a2a24", brand:"#10b981", ac:"#60a5fa",
-        gradient:"linear-gradient(180deg,#04110e,#0a1613)"},
-      rose:{bg:"#130b10", panel:"#1a1116", text:"#ffe6ef", muted:"#f5a2b4", line:"#2a1a22", brand:"#fb7185", ac:"#93c5fd",
-        gradient:"radial-gradient(1000px 520px at 20% 0%,#2a1622 0%,#130b10 60%)"},
-      light:{bg:"#f8fafc", panel:"#ffffff", text:"#0b1020", muted:"#64748b", line:"#e2e8f0", brand:"#16a34a", ac:"#2563eb",
-        gradient:"linear-gradient(180deg,#f8fafc,#eef2f7)"}
+
+      // Light, warm—matches your second screenshot vibe (yellow/green accent)
+      sunrise:{bg:"#f7fafc", panel:"#ffffff", text:"#0b1020", muted:"#64748b", line:"#e2e8f0", brand:"#ff8a00", ac:"#22c55e",
+        gradient:"radial-gradient(1200px 600px at 0% 0%,#ffe082 0%,#f7fafc 45%), radial-gradient(900px 500px at 100% 0%,#b9f6ca 0%,#f7fafc 55%)"},
+
+      // Neutral light gray UI (clean dashboards)
+      slate:{bg:"#eef2f7", panel:"#ffffff", text:"#0f172a", muted:"#6b7280", line:"#d7dee8", brand:"#2563eb", ac:"#14b8a6",
+        gradient:"linear-gradient(180deg,#f1f5f9 0%,#eaeff6 100%)"},
+
+      // Deep blue with subtle teal accents
+      ocean:{bg:"#07141e", panel:"#0b1d2b", text:"#e5f2ff", muted:"#9cc2d8", line:"#133042", brand:"#34d399", ac:"#60a5fa",
+        gradient:"radial-gradient(1100px 580px at 20% 8%,#0e2a40 0%,#07141e 58%)"}
     };
 
     const schemeGrid = document.getElementById('schemeGrid');
@@ -118,11 +122,12 @@
     const fontSel = document.getElementById('fontSel');
     const resetTheme = document.getElementById('resetTheme');
 
-    const order = ["midnight","charcoal","indigo","emerald","rose","light"];
+    const order = ["midnight","sunrise","slate","ocean"];
     schemeGrid.innerHTML = order.map(k=>{
       const v = THEMES[k];
       return `<button type="button" class="swatch" data-key="${k}" title="${k}">
         <span class="dot" style="background:${v.bg}"></span>
+        <span class="name">${k.charAt(0).toUpperCase()+k.slice(1)}</span>
       </button>`;
     }).join('');
 

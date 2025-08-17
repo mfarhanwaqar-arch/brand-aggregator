@@ -25,66 +25,30 @@
 
   <style>
     :root{
-      /* Base palette (Midnight defaults) */
       --bg:#0b0d10; --panel:#11151a; --text:#e6e7eb; --muted:#a7b0be; --line:#1f2937;
       --brand:#22c55e; --ac:#0ea5e9;
       --app-bg: radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%), linear-gradient(180deg,#0b0d10 0%,#090b0f 100%);
       --font: Inter, system-ui, Arial, sans-serif;
-      --panel-raise: 6px; /* small elevation for light themes */
+      --panel-raise: 6px;
     }
-
     *{box-sizing:border-box}
-    body{
-      margin:0; font-family:var(--font);
-      background:var(--app-bg); color:var(--text);
-    }
+    body{margin:0;font-family:var(--font);background:var(--app-bg);color:var(--text)}
     .wrap{max-width:900px;margin:28px auto;padding:0 16px}
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-
-    a.btn,button.btn{
-      appearance:none;
-      border:1px solid var(--line);
-      background:var(--panel);
-      color:var(--text);
-      padding:10px 14px;border-radius:10px;font-weight:600;
-      text-decoration:none;display:inline-block;cursor:pointer
-    }
-
-    main{
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:16px;padding:18px;
-      box-shadow:0 var(--panel-raise) 24px #00000012;
-    }
+    a.btn,button.btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;display:inline-block;cursor:pointer}
+    main{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 var(--panel-raise) 24px #00000012}
     h1{margin:0 0 6px}
     .muted{color:var(--muted)}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-
-    .section{
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:12px;padding:14px
-    }
+    .section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
     .section h3{margin:0 0 10px;font-size:16px}
-
     .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
-    .swatch{
-      height:44px;border-radius:12px;border:1px solid var(--line);cursor:pointer;
-      display:flex;align-items:center;gap:10px;padding:0 10px;justify-content:flex-start
-    }
+    .swatch{height:44px;border-radius:12px;border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;gap:10px;padding:0 10px;justify-content:flex-start}
     .swatch .dot{width:18px;height:18px;border-radius:999px;border:1px solid #0002;flex:none}
     .swatch .name{font-size:12px;color:var(--muted)}
     .swatch.active{outline:2px solid var(--ac)}
-
     label.row{display:flex;align-items:center;gap:10px}
-
-    select{
-      background:var(--panel);
-      border:1px solid var(--line);
-      color:var(--text);
-      border-radius:8px;padding:8px 10px;width:100%
-    }
-
+    select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;width:100%}
     .footer{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
     .reset{background:transparent}
   </style>
@@ -140,18 +104,13 @@
     const THEMES = {
       midnight:{bg:"#0b0d10", panel:"#11151a", text:"#e5e7eb", muted:"#94a3b8", line:"#1f2937", brand:"#22c55e", ac:"#0ea5e9",
         gradient:"radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%),linear-gradient(180deg,#0b0d10 0%,#090b0f 100%)"},
-
-      // Light, warm (yellow→green)
       sunrise:{bg:"#f7fafc", panel:"#ffffff", text:"#0b1020", muted:"#64748b", line:"#e2e8f0", brand:"#ff8a00", ac:"#22c55e",
         gradient:"radial-gradient(1200px 600px at 0% 0%,#ffe082 0%,#f7fafc 45%), radial-gradient(900px 500px at 100% 0%,#b9f6ca 0%,#f7fafc 55%)"},
-
-      // Neutral clean light
       slate:{bg:"#eef2f7", panel:"#ffffff", text:"#0f172a", muted:"#6b7280", line:"#d7dee8", brand:"#2563eb", ac:"#14b8a6",
         gradient:"linear-gradient(180deg,#f1f5f9 0%,#eaeff6 100%)"},
-
-      // Cool dark alt
-      ocean:{bg:"#07141e", panel:"#0b1d2b", text:"#e5f2ff", muted:"#9cc2d8", line:"#133042", brand:"#34d399", ac:"#60a5fa",
-        gradient:"radial-gradient(1100px 580px at 20% 8%,#0e2a40 0%,#07141e 58%)"}
+      // OCEAN (green background variant)
+      ocean:{bg:"#052917", panel:"#0b3a26", text:"#e5f2ff", muted:"#9cc2d8", line:"#134532", brand:"#34d399", ac:"#60a5fa",
+        gradient:"radial-gradient(1100px 580px at 20% 8%,#0e3a24 0%,#052917 58%)"}
     };
 
     const schemeGrid = document.getElementById('schemeGrid');
@@ -180,18 +139,13 @@
       r.style.setProperty('--ac', v.ac);
       r.style.setProperty('--app-bg', solid ? v.bg : v.gradient);
 
-      localStorage.setItem('ac_theme_vars', JSON.stringify({
-        bg:v.bg,panel:v.panel,text:v.text,muted:v.muted,line:v.line,brand:v.brand,ac:v.ac
-      }));
+      localStorage.setItem('ac_theme_vars', JSON.stringify({bg:v.bg,panel:v.panel,text:v.text,muted:v.muted,line:v.line,brand:v.brand,ac:v.ac}));
       localStorage.setItem('ac_theme_appbg', solid ? v.bg : v.gradient);
       localStorage.setItem('ac_theme_key', key);
 
       document.querySelectorAll('.swatch').forEach(b=>b.classList.toggle('active', b.dataset.key===key));
-
-      // live page preview styles
       document.body.style.background = solid ? v.bg : v.gradient;
     }
-
     function applyFont(fontVal){
       document.documentElement.style.setProperty('--font', fontVal);
       localStorage.setItem('ac_theme_font', fontVal);
@@ -202,11 +156,9 @@
       const savedKey = localStorage.getItem('ac_theme_key') || 'midnight';
       const savedBg = localStorage.getItem('ac_theme_appbg');
       const solid = savedBg ? (savedBg === (THEMES[savedKey]?.bg)) : false;
-
       applyTheme(savedKey, solid);
       solidBg.checked = solid;
       document.querySelectorAll('.swatch').forEach(b=>b.classList.toggle('active', b.dataset.key===savedKey));
-
       const savedFont = localStorage.getItem('ac_theme_font');
       if (savedFont) fontSel.value = savedFont;
     })();
@@ -221,7 +173,6 @@
     });
     fontSel.addEventListener('change', ()=>applyFont(fontSel.value));
     resetTheme.addEventListener('click', ()=>{
-      // Default back to Midnight + gradient + Inter
       applyTheme('midnight', false);
       applyFont('Inter, system-ui, Arial, sans-serif');
     });

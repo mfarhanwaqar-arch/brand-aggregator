@@ -44,8 +44,7 @@
   {
     "slug": "ranking-campaigns",
     "name": "Ranking Campaigns (Root KW)",
-    "desc": "Build root-keyword SP setups: single-keyword exact for precision plus broad-modifier reach, all auto-protected with negatives.",
-    "tags": ["Amazon", "Sponsored Products", "Ranking", "Keywords"],
+    "desc": "Build root-keyword SP structures that balance precision and reach—exact for ranking power, broad modifiers for discovery, with negatives auto-handled.",
     "status": "live",
     "features": [
       "Rank smarter, spend smarter",

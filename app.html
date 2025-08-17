@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Poppins:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <!-- Apply saved theme (colors, bg, font) -->
+  <!-- Apply saved theme -->
   <script>
     (function(){
       try{
@@ -50,10 +50,7 @@
       appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--text);
       padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none;display:inline-block;cursor:pointer
     }
-    .btn.primary{
-      background:linear-gradient(135deg,var(--ac),var(--brand));
-      border:none;color:#0b0d10; /* dark text on gradient works for light & dark */
-    }
+    .btn.primary{background:linear-gradient(135deg,var(--ac),var(--brand));border:none;color:#0b0d10}
     .btn.ghost{background:transparent;border:1px dashed var(--line)}
 
     input[type="search"]{
@@ -62,35 +59,38 @@
     }
 
     .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px}
+
+    /* Base card */
     .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
     .card h3{margin:6px 0;font-size:18px}
     .card img.thumb{
       width:100%;height:120px;object-fit:cover;border-radius:12px;margin-bottom:10px;
       border:1px solid var(--line);background:var(--panel)
     }
-
     .features{margin:8px 0 0 18px;color:var(--muted);padding-left:0}
     .features li{margin:4px 0}
-
-    .pill{
-      display:inline-block;border:1px solid var(--line);background:var(--panel);
-      border-radius:999px;padding:4px 8px;font-size:12px;color:var(--muted)
-    }
+    .pill{display:inline-block;border:1px solid var(--line);background:transparent;border-radius:999px;padding:4px 8px;font-size:12px;color:inherit}
     .tags{margin:8px 0;display:flex;gap:6px;flex-wrap:wrap}
-    .tag{
-      border:1px solid var(--line);background:var(--panel);
-      border-radius:999px;padding:2px 8px;font-size:11px;color:var(--muted)
-    }
-
+    .tag{border:1px solid var(--line);background:transparent;border-radius:999px;padding:2px 8px;font-size:11px;color:inherit;opacity:.8}
     .actions{display:flex;gap:8px;align-items:center;margin-top:8px}
 
-    .toast{
-      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
-      background:var(--panel);border:1px solid var(--line);color:var(--text);
-      padding:10px 14px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.2);
-      opacity:0;pointer-events:none;transition:.2s
+    /* Colored card variants (dashboard vibe) */
+    .card.red   { background:#fee2e2; border-color:#fca5a5; color:#7f1d1d; }
+    .card.green { background:#dcfce7; border-color:#86efac; color:#064e3b; }
+    .card.blue  { background:#dbeafe; border-color:#93c5fd; color:#1e3a8a; }
+    .card.yellow{ background:#fef9c3; border-color:#fde047; color:#78350f; }
+
+    /* Make inner elements harmonize on colored cards */
+    .card.red .thumb, .card.green .thumb, .card.blue .thumb, .card.yellow .thumb{
+      background:transparent;border-color:currentColor;opacity:.9
     }
-    .toast.show{opacity:1}
+    .card.red .features, .card.green .features, .card.blue .features, .card.yellow .features{
+      color:inherit; opacity:.85
+    }
+    .card.red .pill, .card.green .pill, .card.blue .pill, .card.yellow .pill,
+    .card.red .tag,  .card.green .tag,  .card.blue .tag,  .card.yellow .tag{
+      border-color: currentColor;
+    }
 
     .status-coming-soon{opacity:.85}
     .status-private{opacity:.6}
@@ -127,24 +127,35 @@
         if(!res.ok) throw new Error('tools.json not found');
         return await res.json();
       }catch(e){
-        grid.innerHTML=`<div class="card"><h3>Could not load tools</h3><p class="muted">${e.message}. Make sure <code>tools.json</code> exists at the repo root.</p></div>`;
+        grid.innerHTML=`<div class="card red"><h3>Could not load tools</h3><p>${e.message}. Make sure <code>tools.json</code> exists at the repo root.</p></div>`;
         return [];
       }
+    }
+
+    function variantFor(slug){
+      // deterministic color by slug (not random each load)
+      const variants=["red","green","blue","yellow"];
+      let hash=0; for(let i=0;i<slug.length;i++) hash=(hash*31 + slug.charCodeAt(i))>>>0;
+      return variants[hash % variants.length];
     }
 
     function card(t){
       const live=t.status==='live';
       const statusLabel= live ? 'Live' : (t.status==='coming-soon'?'Coming soon':'Private');
       const statusClass= live ? '' : 'status-'+t.status;
+
+      // color variant
+      const variant = variantFor(t.slug || t.name || '');
+
       const href = live ? (t.href || `tools/${t.slug}/`) : null;
       const code=`https://github.com/${GH_USER}/${GH_REPO}/tree/main/tools/${t.slug}`;
       const features = Array.isArray(t.features)&&t.features.length?`<ul class="features">${t.features.map(f=>`<li>${f}</li>`).join('')}</ul>`:'';
       const thumb = t.thumb ? `<img class="thumb" alt="${t.name}" src="${t.thumb}">` : '';
-      return `<article class="card ${statusClass}">
+      return `<article class="card ${statusClass} ${variant}">
         ${thumb}
-        <span class="pill">${statusLabel}</span>
+        <span class="pill">Live</span>
         <h3>${t.name}</h3>
-        <p class="muted">${t.desc||''}</p>
+        <p class="muted" style="color:inherit;opacity:.85">${t.desc||''}</p>
         ${features}
         <div class="tags">${(t.tags||[]).map(x=>`<span class="tag">${x}</span>`).join('')}</div>
         <div class="actions">

@@ -27,7 +27,7 @@
     "thumb": "assets/img/asin.png"
   },
   {
-    "slug": "campaign-generator",
+    "slug": "campaign-manager",
     "name": "Bulk Campaign Generator",
     "desc": "Quickly generate Sponsored Product campaigns in bulk with single or multi-keyword options, match type isolation, and automated negations.",
     "tags": ["Amazon", "Sponsored Products", "PPC"],

@@ -33,15 +33,13 @@
     .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px}
     .card{border-radius:16px;padding:16px}
 
-    /* Card variants */
-    .card.red   {background:#fee2e2!important;border:1px solid #fca5a5!important;color:#7f1d1d!important;}
-    .card.green {background:#dcfce7!important;border:1px solid #86efac!important;color:#064e3b!important;}
-    .card.blue  {background:#dbeafe!important;border:1px solid #93c5fd!important;color:#1e3a8a!important;}
-    .card.yellow{background:#fef9c3!important;border:1px solid #fde047!important;color:#78350f!important;}
+    /* Fixed color variants */
+    .card.black  {background:#0b0d10!important;border:1px solid #1f2937!important;color:#f8fafc!important;}
+    .card.white  {background:#ffffff!important;border:1px solid #d1d5db!important;color:#111827!important;}
+    .card.red    {background:#fee2e2!important;border:1px solid #fca5a5!important;color:#7f1d1d!important;}
+    .card.yellow {background:#fef9c3!important;border:1px solid #fde047!important;color:#78350f!important;}
 
-    .card.red .muted,.card.green .muted,.card.blue .muted,.card.yellow .muted,
-    .card.red .features,.card.green .features,.card.blue .features,.card.yellow .features{color:inherit!important;opacity:.85}
-    .card.red .tag,.card.green .tag,.card.blue .tag,.card.yellow .tag{border-color:currentColor;color:inherit!important}
+    .card .muted,.card .features{color:inherit!important;opacity:.85}
   </style>
 </head>
 <body>
@@ -62,14 +60,11 @@
   <script>
     const grid=document.getElementById('grid'),q=document.getElementById('q');
 
-    function variantFor(slug){
-      const v=["red","green","blue","yellow"];
-      let h=0;for(let i=0;i<slug.length;i++)h=(h*31+slug.charCodeAt(i))>>>0;
-      return v[h%v.length];
-    }
+    // Fixed assignment (in order Black, White, Red, Yellow, repeat if more)
+    const fixedColors=["black","white","red","yellow"];
 
-    function card(t){
-      const variant=variantFor(t.slug||t.name||"");
+    function card(t,i){
+      const variant=fixedColors[i % fixedColors.length];
       return `<article class="card ${variant}">
         <h3>${t.name}</h3>
         <p class="muted">${t.desc||""}</p>
@@ -83,7 +78,7 @@
       {slug:"ranking-campaigns",name:"Ranking Campaigns",desc:"Root keyword SP setups."}
     ];
 
-    function render(){grid.innerHTML=tools.map(card).join("");}
+    function render(){grid.innerHTML=tools.map((t,i)=>card(t,i)).join("");}
     render();
   </script>
 </body>

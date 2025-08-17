@@ -30,6 +30,7 @@
       --app-bg: radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%), linear-gradient(180deg,#0b0d10 0%,#090b0f 100%);
       --font: Inter, system-ui, Arial, sans-serif;
     }
+    *{box-sizing:border-box}
     body{margin:0;font-family:var(--font);background:var(--app-bg);color:var(--text)}
     .wrap{max-width:900px;margin:28px auto;padding:0 16px}
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
@@ -84,7 +85,6 @@
   </div>
 
   <script>
-    // Clean preset list (no app card variants here)
     const THEMES = {
       midnight:{bg:"#0b0d10",panel:"#11151a",text:"#e5e7eb",muted:"#94a3b8",line:"#1f2937",brand:"#22c55e",ac:"#0ea5e9",
         gradient:"radial-gradient(1200px 600px at 20% 10%,#111827 0%,#0b0d10 55%),linear-gradient(180deg,#0b0d10 0%,#090b0f 100%)"},
@@ -92,7 +92,6 @@
         gradient:"radial-gradient(1200px 600px at 0% 0%,#ffe082 0%,#f7fafc 45%), radial-gradient(900px 500px at 100% 0%,#b9f6ca 0%,#f7fafc 55%)"},
       slate:{bg:"#eef2f7",panel:"#ffffff",text:"#0f172a",muted:"#6b7280",line:"#d7dee8",brand:"#2563eb",ac:"#14b8a6",
         gradient:"linear-gradient(180deg,#f1f5f9 0%,#eaeff6 100%)"},
-      // Ocean = green background
       ocean:{bg:"#052917",panel:"#0b3a26",text:"#e5f2ff",muted:"#9cc2d8",line:"#134532",brand:"#34d399",ac:"#60a5fa",
         gradient:"radial-gradient(1100px 580px at 20% 8%,#0e3a24 0%,#052917 58%)"}
     };
@@ -157,6 +156,9 @@
       applyTheme('midnight', false);
       applyFont('Inter, system-ui, Arial, sans-serif');
     });
+
+    // Shortcut
+    window.addEventListener('keydown', e=>{ if(e.altKey && (e.key==='t' || e.key==='T')) location.href='./app.html'; });
   </script>
 </body>
 </html>

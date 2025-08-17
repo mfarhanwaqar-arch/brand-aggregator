@@ -25,5 +25,20 @@
       "Spot high-spend / low-return ASINs"
     ],
     "thumb": "assets/img/asin.png"
+  },
+  {
+    "slug": "bulk-campaign-generator",
+    "name": "Bulk Campaign Generator",
+    "desc": "Quickly generate Sponsored Product campaigns in bulk with single or multi-keyword options, match type isolation, and automated negations.",
+    "tags": ["Amazon", "Sponsored Products", "PPC"],
+    "status": "live",
+    "features": [
+      "Bulk creation of Sponsored Product campaigns",
+      "Choose between single keyword or multi-keyword setups",
+      "Automatic isolation with negations across match types",
+      "Support for auto campaigns with product targeting (close match, loose match, substitutes, complements)",
+      "Instant export to campaign-ready bulk sheets"
+    ],
+    "thumb": "assets/img/campaign.png"
   }
 ]

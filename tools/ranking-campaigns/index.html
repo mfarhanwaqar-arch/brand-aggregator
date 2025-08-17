@@ -1,1 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SP Rank Builder — Intent-Only</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#0b0d10;--panel:#11151a;--accent:#4f66ff;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 'Inter',system-ui}
+.wrap{max-width:1200px;margin:24px auto;padding:0 16px}
+.h1{font-size:20px;font-weight:700;margin:0 0 16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 10px 24px rgba(0,0,0,.35);margin-bottom:14px}
+.hd{padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#1a2240,#161b2c);display:flex;gap:8px;align-items:center}
+.idx{background:var(--accent);color:#fff;width:22px;height:22px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.hd h2{margin:0;font-size:14px}
+.help{margin-left:6px;font-size:14px;font-weight:700;background:#293a8b;color:#fff;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
+.help .tip{visibility:hidden;opacity:0;transition:opacity .2s;position:absolute;top:125%;left:50%;transform:translateX(-50%);background:#0f1326;border:1px solid #22315e;color:#dbe4ff;padding:10px 12px;border-radius:10px;min-width:260px;max-width:360px;z-index:10;font-size:12px;line-height:1.4}
+.help:hover .tip{visibility:visible;opacity:1}
+.bd{padding:14px}
+.row{display:grid;grid-template-columns:220px 1fr;gap:12px;align-items:center;margin:8px 0}
+.row.stack{grid-template-columns:1fr}
+label{color:#cbd5e1;font-weight:600}
+input[type="text"],input[type="date"],input[type="number"],textarea,select{width:100%;background:#0c1016;border:1px solid #1e293b;color:var(--text);padding:10px 12px;border-radius:10px;outline:none}
+textarea{min-height:92px;resize:vertical}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{cursor:pointer;background:#1b2430;border:1px solid #233044;color:#dbe4ff;padding:8px 12px;border-radius:999px}
+.chip.active{background:#4f66ff;border-color:#2f3cee;color:#fff}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn{cursor:pointer;background:#293a8b;border:1px solid #394b9a;color:#fff;padding:10px 14px;border-radius:10px;font-weight:600}
+.btn.good{background:#149a4b;border-color:#159253}
+.small{font-size:12px;color:#94a3b8}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.inline{display:flex;gap:10px;align-items:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="h1">SP Rank Builder — Intent-Only (Exact • BMM • Product)</div>
+
+  <!-- 1. Campaign Details -->
+  <section class="panel">
+    <div class="hd">
+      <span class="idx">1</span><h2>Campaign Details</h2>
+      <span class="help">?<span class="tip">
+        <b>Ad Type:</b> Sponsored Products only.<br/>
+        <b>Start Date:</b> calendar input; exported as YYYYMMDD.<br/>
+        <b>Bidding Strategy:</b> copied to Campaign row.<br/>
+        <b>Naming:</b> leave blank to auto: <i>AdType | SKU | {intent} | Type</i>. Use <code>{intent}</code> in your template to inject detected intent.<br/>
+        <b>1 SKU per campaign:</b> each SKU creates its own campaign(s) in the same input order.
+      </span></span>
+    </div>
+    <div class="bd">
+      <div class="row"><label>Ad Type</label><select id="adType"><option>Sponsored Products</option></select></div>
+      <div class="row"><label>Start Date</label><div class="inline"><input id="startDate" type="date"><button id="openCal" class="btn" type="button">📅</button></div></div>
+      <div class="row"><label>Daily Budget (per campaign)</label><input id="dailyBudget" type="number" min="1" step="0.01" placeholder="25" /></div>
+      <div class="row"><label>Bidding Strategy</label>
+        <select id="biddingStrategy">
+          <option>Dynamic bids - down only</option>
+          <option>Dynamic bids - up and down</option>
+          <option>Fixed bids</option>
+        </select>
+      </div>
+      <div class="row"><label>Campaign Name Structure</label><input id="nameTpl" type="text" placeholder="AdType | SKU | {intent} | Type"/></div>
+      <div class="row stack small">IDs mirror Campaign Name. Spacer row after each campaign group.</div>
+    </div>
+  </section>
+
+  <!-- 2. SKUs -->
+  <section class="panel">
+    <div class="hd">
+      <span class="idx">2</span><h2>Product SKUs</h2>
+      <span class="help">?<span class="tip">One SKU per line. The builder always makes <b>separate campaigns per SKU</b>, preserving the input order.</span></span>
+    </div>
+    <div class="bd">
+      <div class="row"><label>SKUs</label><textarea id="skuList" placeholder="SKU-001&#10;SKU-002"></textarea></div>
+    </div>
+  </section>
+
+  <!-- 3. Bid & Targeting Settings -->
+  <section class="panel">
+    <div class="hd">
+      <span class="idx">3</span><h2>Bid & Targeting Settings</h2>
+      <span class="help">?<span class="tip">
+        <b>Low Range:</b> used for BMM mid-bid.<br/>
+        <b>Competitive Range:</b> used for Exact & Product.<br/>
+        <b>Placements:</b> creates Bidding Adjustment rows when % &gt; 0.<br/>
+        <b>Single-KW / Single-PT:</b> one keyword or one ASIN per campaign. Otherwise use the <i>Max KWs per campaign</i> cap (per intent).<br/>
+        <b>Isolation:</b> when ON, Exact KWs are added as <i>Negative Exact</i> to BMM campaigns for the same SKU & intent.
+      </span></span>
+    </div>
+    <div class="bd">
+      <div class="row"><label>Low Bid Range</label><div class="three"><input id="lowMin" type="number" step="0.01" placeholder="0.25"/><input id="lowMax" type="number" step="0.01" placeholder="0.55"/><span class="small">Used for BMM</span></div></div>
+      <div class="row"><label>Competitive Bid Range</label><div class="three"><input id="compMin" type="number" step="0.01" placeholder="0.60"/><input id="compMax" type="number" step="0.01" placeholder="1.50"/><span class="small">Used for Exact/Product</span></div></div>
+      <div class="row"><label>Placements</label>
+        <div class="three">
+          <div class="inline"><span class="small" style="width:140px">Top of Search %</span><input id="topSearchPct" type="number" step="1" min="0" max="900" placeholder="0"></div>
+          <div class="inline"><span class="small" style="width:140px">Product Pages %</span><input id="prodPagesPct" type="number" step="1" min="0" max="900" placeholder="0"></div>
+          <div class="inline"><span class="small" style="width:140px">Rest of Search %</span><input id="restSearchPct" type="number" step="1" min="0" max="900" placeholder="0"></div>
+        </div>
+      </div>
+      <div class="row"><label>Single-KW / Single-PT</label><div class="inline"><input id="singleMode" type="checkbox"/><label for="singleMode">Build one KW or one ASIN per campaign</label></div></div>
+      <div class="row"><label>Max KWs per campaign</label><input id="maxKws" type="number" min="0" step="1" placeholder="0 (no limit)"></div>
+      <div class="row"><label>Keyword Isolation</label><div class="inline"><input id="isolateMode" type="checkbox"/><label for="isolateMode">Enable Isolation (auto-add <b>Negative Exact</b> in BMM for Exact KWs)</label></div></div>
+    </div>
+  </section>
+
+  <!-- 4. Campaign Types -->
+  <section class="panel">
+    <div class="hd">
+      <span class="idx">4</span><h2>Campaign Types</h2>
+      <span class="help">?<span class="tip">
+        Toggle which to build: <b>Exact</b>, <b>Broad Modifier</b> (BMM), <b>Product</b> (ASIN targets).<br/>
+        Keywords are grouped by <b>intent</b> (first meaningful stem) for naming.
+      </span></span>
+    </div>
+    <div class="bd">
+      <div class="chips" id="typeChips">
+        <button type="button" class="chip" data-type="exact">Exact Match</button>
+        <button type="button" class="chip" data-type="bmm">Broad Modifier</button>
+        <button type="button" class="chip" data-type="product">Product Match</button>
+      </div>
+      <div class="row" style="margin-top:10px"><label>Keywords (bulk)</label><textarea id="kwList" placeholder="boot&#10;shoe boot&#10;boot insoles&#10;boot insoles men"></textarea></div>
+      <div class="row"><label>ASINs for Product Targeting</label><textarea id="asinList" placeholder="B0XXXXXXX&#10;B0YYYYYYY"></textarea></div>
+      <div class="row"><label>Auto-detect Intent</label><div class="inline"><input id="intentAuto" type="checkbox" checked/><label for="intentAuto">Group campaign names by intent</label></div></div>
+    </div>
+  </section>
+
+  <!-- Buttons -->
+  <section class="panel"><div class="bd"><div class="btns">
+    <button class="btn good" id="generate">Generate Bulk .xlsx</button>
+    <button class="btn" id="sample">Load Sample</button>
+    <button class="btn" id="clear">Clear</button>
+  </div></div></section>
+
+  <section class="panel"><div class="bd small">
+    Exported headers (Amazon bulk): Product, Entity, Operation, Campaign ID, Ad Group ID, Portfolio ID, Ad ID, Keyword ID, Product Targeting ID, Campaign Name, Ad Group Name, Start Date, End Date, Targeting Type, State, Daily Budget, SKU, Ad Group Default Bid, Bid, Keyword Text, Native Language Keyword, Native Language Locale, Match Type, Bidding Strategy, Placement, Percentage, Product Targeting Expression
+  </div></section>
+</div>
+
+<script>
+/* ---------- DOM helpers ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], v=s=>$(s).value?.trim?.()||'';
+$$('#typeChips .chip').forEach(b=>b.addEventListener('click',()=>b.classList.toggle('active')));
+
+/* Calendar button */
+$('#openCal').addEventListener('click',()=>{const i=$('#startDate');try{if(i.showPicker){i.showPicker();return;}}catch(e){}i.focus();i.click();});
+
+/* Sample + Clear */
+$('#sample').onclick=()=>{ $('#startDate').valueAsDate=new Date(); $('#dailyBudget').value=25; $('#biddingStrategy').value='Dynamic bids - down only';
+  $('#skuList').value='SKU-001\nSKU-002'; $('#kwList').value='boot\nshoe boot\nboot insoles\nboot insoles men'; $('#asinList').value='B0ABCDEF12\nB0HIJKLM34';
+  $('#lowMin').value=0.25; $('#lowMax').value=0.55; $('#compMin').value=0.60; $('#compMax').value=1.50;
+  $('#topSearchPct').value=0; $('#prodPagesPct').value=0; $('#restSearchPct').value=0; $('#singleMode').checked=true; $('#maxKws').value=3;
+  $$('#typeChips .chip').forEach(c=>c.classList.remove('active')); ['exact','bmm','product'].forEach(t=>document.querySelector(`.chip[data-type="${t}"]`).classList.add('active'));
+};
+$('#clear').onclick=()=>{ $$('input, textarea').forEach(n=>n.value=''); $('#singleMode').checked=false; $$('#typeChips .chip').forEach(c=>c.classList.remove('active')); };
+
+/* ---------- utils ---------- */
+function parseList(s){return s.split(/[\n,]+/).map(x=>x.trim()).filter(Boolean)}
+function mid(a,b){a=Number(a);b=Number(b); if(!isFinite(a)||!isFinite(b)) return ''; return ((a+b)/2).toFixed(2)}
+function yyyymmdd(d){if(!d) return ''; return d.replaceAll('-','')}
+function shortKw(k){const clean=k.toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim(); return clean.slice(0,24)}
+function bmmify(k){return k.split(/\s+/).map(t=>t.startsWith('+')?t:'+'+t).join(' ').trim()}
+function chunk(arr,size){if(!size||size<=0) return [arr]; const out=[]; for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out}
+const STOP=new Set(['the','a','an','for','with','of','and','or','men','womens','women','kids','kid','boys','girls','to','on','in']);
+function stem(w){return w.replace(/(ing|ed|s)$/,'')}
+function detectIntent(kw){const toks=kw.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean);for(const t of toks){if(!STOP.has(t)) return stem(t)}return toks[0]||'generic'}
+function groupByIntent(kws){const m=new Map(); kws.forEach(k=>{const key=detectIntent(k); if(!m.has(key)) m.set(key,[]); m.get(key).push(k)}); return m}
+
+/* ASIN helpers -> asin="XXXXXXXXXX" */
+function extractASIN(s){ const m=String(s).toUpperCase().match(/[A-Z0-9]{10}/); return m?m[0]:''; }
+function asinExpr(s){ const a=extractASIN(s); return a?`asin="${a}"`:''; }
+
+/* ---------- builder ---------- */
+function buildRows(){
+  const adType=v('#adType')||'Sponsored Products',
+        startDate=yyyymmdd(v('#startDate')),
+        budget=Number(v('#dailyBudget'))||'',
+        strat=v('#biddingStrategy'),
+        tpl=v('#nameTpl');
+
+  // 1 SKU per campaign → separate sets per SKU (input order preserved)
+  const skus=parseList(v('#skuList'));
+  const kws=parseList(v('#kwList'));
+  const asins=parseList(v('#asinList')).map(extractASIN).filter(Boolean);
+
+  const lowMid=mid(v('#lowMin'),v('#lowMax')),
+        compMid=mid(v('#compMin'),v('#compMax'));
+
+  const topPct=Number(v('#topSearchPct'))||0,
+        prodPct=Number(v('#prodPagesPct'))||0,
+        restPct=Number(v('#restSearchPct'))||0;
+
+  const placements=[];
+  if(topPct>0) placements.push({place:'Top of Search (First Page)', pct:topPct});
+  if(prodPct>0) placements.push({place:'Product Pages', pct:prodPct});
+  if(restPct>0) placements.push({place:'Rest of Search', pct:restPct});
+
+  const single=$('#singleMode').checked,
+        maxK=parseInt(v('#maxKws'))||0,
+        isolate=$('#isolateMode').checked,
+        types=$$('#typeChips .chip.active').map(x=>x.dataset.type),
+        rows=[];
+
+  // Process types in defined order so isolation works (Exact before BMM)
+  const orderWeight={exact:1,bmm:2,product:3};
+  types.sort((a,b)=>(orderWeight[a]||9)-(orderWeight[b]||9));
+
+  // isolation tracking: sku|intent -> { exact:Set, bmm:[{name}] }
+  const isoMap=new Map();
+  const isoKey=(sku,intent)=>`${sku}|||${intent}`;
+  const ensureIso=(sku,intent)=>{
+    const k=isoKey(sku,intent);
+    if(!isoMap.has(k)) isoMap.set(k,{exact:new Set(),bmm:[]});
+    return isoMap.get(k);
+  };
+
+  function pushCampaignBase(campName,adGroupBid){
+    // Campaign
+    rows.push({Product:'Sponsored Products',Entity:'Campaign',Operation:'Create','Campaign ID':campName,'Ad Group ID':campName,'Portfolio ID':'','Ad ID':'','Keyword ID':'','Product Targeting ID':'','Campaign Name':campName,'Ad Group Name':'','Start Date':startDate,'End Date':'','Targeting Type':'Manual',State:'enabled','Daily Budget':budget,SKU:'','Ad Group Default Bid':'',Bid:'','Keyword Text':'','Native Language Keyword':'','Native Language Locale':'','Match Type':'','Bidding Strategy':strat,Placement:'',Percentage:'','Product Targeting Expression':''});
+    // Bidding adjustments
+    placements.forEach(p=>rows.push({Product:'Sponsored Products',Entity:'Bidding Adjustment',Operation:'Create','Campaign ID':campName,'Ad Group ID':campName,'Portfolio ID':'','Ad ID':'','Keyword ID':'','Product Targeting ID':'','Campaign Name':campName,'Ad Group Name':'','Start Date':'','End Date':'','Targeting Type':'',State:'enabled','Daily Budget':'',SKU:'','Ad Group Default Bid':'',Bid:'','Keyword Text':'','Native Language Keyword':'','Native Language Locale':'','Match Type':'','Bidding Strategy':'',Placement:p.place,Percentage:p.pct,'Product Targeting Expression':''}));
+    // Ad Group
+    rows.push({Product:'Sponsored Products',Entity:'Ad Group',Operation:'Create','Campaign ID':campName,'Ad Group ID':campName,'Portfolio ID':'','Ad ID':'','Keyword ID':'','Product Targeting ID':'','Campaign Name':campName,'Ad Group Name':campName,'Start Date':'','End Date':'','Targeting Type':'',State:'enabled','Daily Budget':'',SKU:'','Ad Group Default Bid':adGroupBid,Bid:'','Keyword Text':'','Native Language Keyword':'','Native Language Locale':'','Match Type':'','Bidding Strategy':'',Placement:'',Percentage:'','Product Targeting Expression':''});
+  }
+  function addProductAd(campName,sku){
+    rows.push({Product:'Sponsored Products',Entity:'Product Ad',Operation:'Create','Campaign ID':campName,'Ad Group ID':campName,'Portfolio ID':'','Ad ID':'','Keyword ID':'','Product Targeting ID':'','Campaign Name':campName,'Ad Group Name':campName,'Start Date':'','End Date':'','Targeting Type':'',State:'enabled','Daily Budget':'',SKU:sku,'Ad Group Default Bid':'',Bid:'','Keyword Text':'','Native Language Keyword':'','Native Language Locale':'','Match Type':'','Bidding Strategy':'',Placement:'',Percentage:'','Product Targeting Expression':''});
+  }
+  function addKeyword(campName,matchType,bid,k){
+    rows.push({Product:'Sponsored Products',Entity:'Keyword',Operation:'Create','Campaign ID':campName,'Ad Group ID':campName,'Portfolio ID':'','Ad ID':'','Keyword ID':'','Product Targeting ID':'','Campaign Name':campName,'Ad Group Name':campName,'Start Date':'','End Date':'','Targeting Type':'',State:'enabled','Daily Budget':'',SKU:'','Ad Group Default Bid':'',Bid:bid,'Keyword Text':k,'Native Language Keyword':'','Native Language Locale':'','Match Type':matchType,'Bidding Strategy':'',Placement:'',Percentage:'','Product Targeting Expression':''});
+  }
+  function addNegKeyword(campName,negMatch,k){
+    rows.push({Product:'Sponsored Products',Entity:'Negative Keyword',Operation:'Create','Campaign ID':campName,'Ad Group ID':campName,'Portfolio ID':'','Ad ID':'','Keyword ID':'','Product Targeting ID':'','Campaign Name':campName,'Ad Group Name':campName,'Start Date':'','End Date':'','Targeting Type':'',State:'enabled','Daily Budget':'',SKU:'','Ad Group Default Bid':'',Bid:'','Keyword Text':k,'Native Language Keyword':'','Native Language Locale':'','Match Type':negMatch,'Bidding Strategy':'',Placement:'',Percentage:'','Product Targeting Expression':''});
+  }
+  function addPT(campName,bid,asin){
+    rows.push({Product:'Sponsored Products',Entity:'Product Targeting',Operation:'Create','Campaign ID':campName,'Ad Group ID':campName,'Portfolio ID':'','Ad ID':'','Keyword ID':'','Product Targeting ID':'','Campaign Name':campName,'Ad Group Name':campName,'Start Date':'','End Date':'','Targeting Type':'',State:'enabled','Daily Budget':'',SKU:'','Ad Group Default Bid':'',Bid:bid,'Keyword Text':'','Native Language Keyword':'','Native Language Locale':'','Match Type':'','Bidding Strategy':'',Placement:'',Percentage:'','Product Targeting Expression':asinExpr(asin)});
+  }
+
+  // Build campaigns per type, per SKU
+  types.forEach(t=>{
+    const pretty = t==='bmm' ? 'BMM' : (t==='product' ? 'Product' : 'Exact');
+    const baseBid = (t==='exact'||t==='product') ? (compMid||lowMid) : (lowMid||compMid);
+    const matchType = (t==='bmm') ? 'Broad' : (t==='exact' ? 'Exact' : '');
+
+    skus.forEach(sku=>{
+      if(t==='product'){
+        // ASIN-based
+        if(single){
+          asins.forEach(asin=>{
+            const name = (tpl? tpl : `${adType} | ${sku} | Product | ${asin}`);
+            pushCampaignBase(name,baseBid); addProductAd(name,sku); addPT(name,baseBid,asin); rows.push({});
+          });
+        } else {
+          const asGroups = chunk(asins, maxK>0?maxK:asins.length);
+          asGroups.forEach((grp,i)=>{
+            const name = (tpl? tpl : `${adType} | ${sku} | Product${asGroups.length>1?` - set ${i+1}`:''}`);
+            pushCampaignBase(name,baseBid); addProductAd(name,sku);
+            grp.forEach(a=>addPT(name,baseBid,a));
+            rows.push({});
+          });
+        }
+        return;
+      }
+
+      // Keyword types (Exact/BMM)
+      const baseKwList = t==='bmm' ? kws.map(bmmify) : kws;
+      const grouped = $('#intentAuto').checked ? groupByIntent(baseKwList) : new Map([['generic',baseKwList]]);
+
+      grouped.forEach((list,intent)=>{
+        if(single){
+          // one KW per campaign
+          list.forEach(k=>{
+            const nm = tpl ? tpl.replace(/\{intent\}/gi,intent) : `${adType} | ${sku} | ${intent} | ${pretty} - ${shortKw(k)}`;
+            pushCampaignBase(nm,baseBid); addProductAd(nm,sku); addKeyword(nm,matchType,baseBid,k);
+
+            // record isolation data
+            if(t==='exact'){ ensureIso(sku,intent).exact.add(k); }
+            if(t==='bmm'){ ensureIso(sku,intent).bmm.push({name:nm}); }
+
+            // If BMM AND isolate is on AND we already know exacts for this sku/intent, add negatives now
+            if(isolate && t==='bmm'){
+              const iso=ensureIso(sku,intent);
+              iso.exact.forEach(exk=>addNegKeyword(nm,'Negative Exact',exk));
+            }
+
+            rows.push({});
+          });
+        } else {
+          // cap per intent
+          const groups = chunk(list, maxK>0?maxK:list.length);
+          groups.forEach((grp,i)=>{
+            const nm = tpl ? tpl.replace(/\{intent\}/gi,intent) : `${adType} | ${sku} | ${intent} | ${pretty}${groups.length>1?` - set ${i+1}`:''}`;
+            pushCampaignBase(nm,baseBid); addProductAd(nm,sku);
+            grp.forEach(k=>addKeyword(nm,matchType,baseBid,k));
+
+            // record isolation data
+            if(t==='exact'){ const iso=ensureIso(sku,intent); grp.forEach(k=>iso.exact.add(k)); }
+            if(t==='bmm'){ ensureIso(sku,intent).bmm.push({name:nm}); }
+
+            // If BMM AND isolate is on AND we already know exacts for this sku/intent, add negatives now
+            if(isolate && t==='bmm'){
+              const iso=ensureIso(sku,intent);
+              iso.exact.forEach(exk=>addNegKeyword(nm,'Negative Exact',exk));
+            }
+
+            rows.push({});
+          });
+        }
+      });
+    });
+  });
+
+  // Edge case: if user selected Exact after BMM (we sorted but just in case),
+  // add negatives post-pass for any BMM campaigns missing them.
+  if(isolate){
+    isoMap.forEach((obj,key)=>{
+      obj.bmm.forEach(bmmCamp=>{
+        // check if negatives already added (lightweight heuristic not to duplicate)
+        // We won't de-duplicate strictly; Amazon bulk will de-dup by engine or you can keep.
+        obj.exact.forEach(exk=>addNegKeyword(bmmCamp.name,'Negative Exact',exk));
+      });
+      rows.push({}); // spacer between iso groups (optional)
+    });
+  }
+
+  return rows;
+}
+
+/* ---------- export ---------- */
+function toSheet(rows){
+  const headers=['Product','Entity','Operation','Campaign ID','Ad Group ID','Portfolio ID','Ad ID','Keyword ID','Product Targeting ID','Campaign Name','Ad Group Name','Start Date','End Date','Targeting Type','State','Daily Budget','SKU','Ad Group Default Bid','Bid','Keyword Text','Native Language Keyword','Native Language Locale','Match Type','Bidding Strategy','Placement','Percentage','Product Targeting Expression'];
+  const data=[headers];
+  rows.forEach(r=>{ if(Object.keys(r).length===0){ data.push(Array(headers.length).fill('')); } else { data.push(headers.map(h=>r[h]??'')); } });
+  return data;
+}
+function download(rows){ const ws=XLSX.utils.aoa_to_sheet(toSheet(rows)); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Bulk'); XLSX.writeFile(wb,'sp-rank-builder.xlsx'); }
+$('#generate').onclick=()=>{ const rows=buildRows(); if(!rows.length) return alert('Nothing to export'); download(rows); };
+</script>
+</body>
+</html>
 

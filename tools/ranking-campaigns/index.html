@@ -196,9 +196,9 @@ function buildRows(){
         restPct=Number(v('#restSearchPct'))||0;
 
   const placements=[];
-  if(topPct>0) placements.push({place:'Top of Search (First Page)', pct:topPct});
-  if(prodPct>0) placements.push({place:'Product Pages', pct:prodPct});
-  if(restPct>0) placements.push({place:'Rest of Search', pct:restPct});
+  if(topPct>0) placements.push({place:'Placement Top', pct:topPct});
+  if(prodPct>0) placements.push({place:'Placement Product Page', pct:prodPct});
+  if(restPct>0) placements.push({place:'Placement Rest Of Search', pct:restPct});
 
   const single=$('#singleMode').checked,
         maxK=parseInt(v('#maxKws'))||0,

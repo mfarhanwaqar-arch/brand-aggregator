@@ -36,9 +36,41 @@ textarea{min-height:92px;resize:vertical}
 .small{font-size:12px;color:#94a3b8}
 .three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .inline{display:flex;gap:10px;align-items:center}
+
+/* --- Fixed Top Right Buttons --- */
+.top-buttons{
+  position:fixed; top:18px; right:24px;
+  display:flex; flex-direction:column; gap:12px;
+  z-index:9999;
+}
+.top-buttons a{
+  background:#e45141; border:1px solid #b93f34;
+  color:#fff; text-decoration:none; font-weight:800;
+  padding:12px 18px; border-radius:12px;
+  box-shadow:0 10px 20px rgba(0,0,0,.35);
+  letter-spacing:.2px; text-align:center;
+  transition:all .2s ease-in-out;
+  white-space:nowrap;
+}
+.top-buttons a:hover{filter:brightness(1.06); transform:translateY(-2px);}
+@media (max-width:700px){
+  .top-buttons{top:12px; right:12px}
+  .top-buttons a{padding:10px 14px; font-weight:700}
+}
 </style>
 </head>
 <body>
+
+<!-- Fixed Buttons -->
+<div class="top-buttons">
+  <a href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9" target="_blank" rel="noopener">
+    📘 Ranking Case Study
+  </a>
+  <a href="https://calendly.com/m-farhanwaqar/30min" target="_blank" rel="noopener">
+    📅 Book a Call
+  </a>
+</div>
+
 <div class="wrap">
   <div class="h1">SP Rank Builder — Intent-Only (Exact • BMM • Product)</div>
 
@@ -314,16 +346,13 @@ function buildRows(){
     });
   });
 
-  // Edge case: if user selected Exact after BMM (we sorted but just in case),
-  // add negatives post-pass for any BMM campaigns missing them.
+  // Edge case: ensure negatives added for any BMM after Exact
   if(isolate){
-    isoMap.forEach((obj,key)=>{
+    isoMap.forEach((obj)=>{
       obj.bmm.forEach(bmmCamp=>{
-        // check if negatives already added (lightweight heuristic not to duplicate)
-        // We won't de-duplicate strictly; Amazon bulk will de-dup by engine or you can keep.
         obj.exact.forEach(exk=>addNegKeyword(bmmCamp.name,'Negative Exact',exk));
       });
-      rows.push({}); // spacer between iso groups (optional)
+      rows.push({});
     });
   }
 
@@ -342,4 +371,3 @@ $('#generate').onclick=()=>{ const rows=buildRows(); if(!rows.length) return ale
 </script>
 </body>
 </html>
-

@@ -34,7 +34,6 @@ textarea{min-height:92px;resize:vertical}
 .btn{cursor:pointer;background:#293a8b;border:1px solid #394b9a;color:#fff;padding:10px 14px;border-radius:10px;font-weight:600}
 .btn.good{background:#149a4b;border-color:#159253}
 .small{font-size:12px;color:#94a3b8}
-.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .inline{display:flex;gap:10px;align-items:center}
 
 /* --- Fixed Top Right Buttons --- */
@@ -118,18 +117,24 @@ textarea{min-height:92px;resize:vertical}
     <div class="hd">
       <span class="idx">3</span><h2>Bid & Targeting Settings</h2>
       <span class="help">?<span class="tip">
-        <b>Low Range:</b> used for BMM mid-bid.<br/>
-        <b>Competitive Range:</b> used for Exact & Product.<br/>
+        <b>Low Bid:</b> used for BMM.<br/>
+        <b>Competitive Bid:</b> used for Exact & Product.<br/>
         <b>Placements:</b> creates Bidding Adjustment rows when % &gt; 0.<br/>
         <b>Single-KW / Single-PT:</b> one keyword or one ASIN per campaign. Otherwise use the <i>Max KWs per campaign</i> cap (per intent).<br/>
         <b>Isolation:</b> when ON, Exact KWs are added as <i>Negative Exact</i> to BMM campaigns for the same SKU & intent.
       </span></span>
     </div>
     <div class="bd">
-      <div class="row"><label>Low Bid Range</label><div class="three"><input id="lowMin" type="number" step="0.01" placeholder="0.25"/><input id="lowMax" type="number" step="0.01" placeholder="0.55"/><span class="small">Used for BMM</span></div></div>
-      <div class="row"><label>Competitive Bid Range</label><div class="three"><input id="compMin" type="number" step="0.01" placeholder="0.60"/><input id="compMax" type="number" step="0.01" placeholder="1.50"/><span class="small">Used for Exact/Product</span></div></div>
+      <div class="row">
+        <label>Low Bid (BMM)</label>
+        <input id="lowBid" type="number" step="0.01" placeholder="0.35"/>
+      </div>
+      <div class="row">
+        <label>Competitive Bid (Exact/Product)</label>
+        <input id="compBid" type="number" step="0.01" placeholder="0.85"/>
+      </div>
       <div class="row"><label>Placements</label>
-        <div class="three">
+        <div class="inline" style="flex-wrap:wrap">
           <div class="inline"><span class="small" style="width:140px">Top of Search %</span><input id="topSearchPct" type="number" step="1" min="0" max="900" placeholder="0"></div>
           <div class="inline"><span class="small" style="width:140px">Product Pages %</span><input id="prodPagesPct" type="number" step="1" min="0" max="900" placeholder="0"></div>
           <div class="inline"><span class="small" style="width:140px">Rest of Search %</span><input id="restSearchPct" type="number" step="1" min="0" max="900" placeholder="0"></div>
@@ -183,17 +188,35 @@ $$('#typeChips .chip').forEach(b=>b.addEventListener('click',()=>b.classList.tog
 $('#openCal').addEventListener('click',()=>{const i=$('#startDate');try{if(i.showPicker){i.showPicker();return;}}catch(e){}i.focus();i.click();});
 
 /* Sample + Clear */
-$('#sample').onclick=()=>{ $('#startDate').valueAsDate=new Date(); $('#dailyBudget').value=25; $('#biddingStrategy').value='Dynamic bids - down only';
-  $('#skuList').value='SKU-001\nSKU-002'; $('#kwList').value='boot\nshoe boot\nboot insoles\nboot insoles men'; $('#asinList').value='B0ABCDEF12\nB0HIJKLM34';
-  $('#lowMin').value=0.25; $('#lowMax').value=0.55; $('#compMin').value=0.60; $('#compMax').value=1.50;
-  $('#topSearchPct').value=0; $('#prodPagesPct').value=0; $('#restSearchPct').value=0; $('#singleMode').checked=true; $('#maxKws').value=3;
-  $$('#typeChips .chip').forEach(c=>c.classList.remove('active')); ['exact','bmm','product'].forEach(t=>document.querySelector(`.chip[data-type="${t}"]`).classList.add('active'));
+$('#sample').onclick=()=>{ 
+  $('#startDate').valueAsDate=new Date(); 
+  $('#dailyBudget').value=25; 
+  $('#biddingStrategy').value='Dynamic bids - down only';
+  $('#skuList').value='SKU-001\nSKU-002'; 
+  $('#kwList').value='boot\nshoe boot\nboot insoles\nboot insoles men'; 
+  $('#asinList').value='B0ABCDEF12\nB0HIJKLM34';
+  // single bid values
+  $('#lowBid').value=0.35; 
+  $('#compBid').value=0.85;
+  // placements & options
+  $('#topSearchPct').value=0; 
+  $('#prodPagesPct').value=0; 
+  $('#restSearchPct').value=0; 
+  $('#singleMode').checked=true; 
+  $('#maxKws').value=3;
+  $$('#typeChips .chip').forEach(c=>c.classList.remove('active')); 
+  ['exact','bmm','product'].forEach(t=>document.querySelector(`.chip[data-type="${t}"]`).classList.add('active'));
 };
-$('#clear').onclick=()=>{ $$('input, textarea').forEach(n=>n.value=''); $('#singleMode').checked=false; $$('#typeChips .chip').forEach(c=>c.classList.remove('active')); };
+$('#clear').onclick=()=>{ 
+  $$('input, textarea').forEach(n=>{
+    if(n.type==='checkbox'){ n.checked=false; }
+    else { n.value=''; }
+  }); 
+  $$('#typeChips .chip').forEach(c=>c.classList.remove('active')); 
+};
 
 /* ---------- utils ---------- */
 function parseList(s){return s.split(/[\n,]+/).map(x=>x.trim()).filter(Boolean)}
-function mid(a,b){a=Number(a);b=Number(b); if(!isFinite(a)||!isFinite(b)) return ''; return ((a+b)/2).toFixed(2)}
 function yyyymmdd(d){if(!d) return ''; return d.replaceAll('-','')}
 function shortKw(k){const clean=k.toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim(); return clean.slice(0,24)}
 function bmmify(k){return k.split(/\s+/).map(t=>t.startsWith('+')?t:'+'+t).join(' ').trim()}
@@ -215,13 +238,14 @@ function buildRows(){
         strat=v('#biddingStrategy'),
         tpl=v('#nameTpl');
 
+  // single bid values
+  const lowBid = Number(v('#lowBid')) || '',
+        compBid = Number(v('#compBid')) || '';
+
   // 1 SKU per campaign → separate sets per SKU (input order preserved)
   const skus=parseList(v('#skuList'));
   const kws=parseList(v('#kwList'));
   const asins=parseList(v('#asinList')).map(extractASIN).filter(Boolean);
-
-  const lowMid=mid(v('#lowMin'),v('#lowMax')),
-        compMid=mid(v('#compMin'),v('#compMax'));
 
   const topPct=Number(v('#topSearchPct'))||0,
         prodPct=Number(v('#prodPagesPct'))||0,
@@ -275,7 +299,7 @@ function buildRows(){
   // Build campaigns per type, per SKU
   types.forEach(t=>{
     const pretty = t==='bmm' ? 'BMM' : (t==='product' ? 'Product' : 'Exact');
-    const baseBid = (t==='exact'||t==='product') ? (compMid||lowMid) : (lowMid||compMid);
+    const baseBid = (t==='exact'||t==='product') ? (compBid||lowBid) : (lowBid||compBid);
     const matchType = (t==='bmm') ? 'Broad' : (t==='exact' ? 'Exact' : '');
 
     skus.forEach(sku=>{

@@ -46,14 +46,10 @@ input[type="number"]{background:#0b0f14;border:1px solid #1d2631;border-radius:8
 hr.sep{border:0;border-top:1px solid #1f2937;margin:8px 0}
 
 /* Summary title + buttons */
-.summary-title{
-  font-size:22px;font-weight:700;line-height:1.35;margin:0 0 4px;color:var(--text)
-}
+.summary-title{font-size:22px;font-weight:700;line-height:1.35;margin:0 0 4px;color:var(--text)}
 .summary-subtitle{font-size:16px;color:var(--muted);font-weight:400}
 .summary-buttons{display:flex;gap:12px;margin:12px 0 10px;flex-wrap:wrap}
-.summary-btn{
-  background:var(--accent);color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:600
-}
+.summary-btn{background:var(--accent);color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:600}
 .summary-btn:hover{filter:brightness(1.05)}
 .summary-btn.outline{background:transparent;border:1px solid var(--accent);color:var(--text)}
 .summary-btn.outline:hover{background:#0e141b}
@@ -61,20 +57,22 @@ hr.sep{border:0;border-top:1px solid #1f2937;margin:8px 0}
 /* Chart wrapper */
 .chart-wrap{padding:10px;background:#0f1318;border:1px solid #1f2937;border-radius:12px}
 
-/* Print tweaks */
+/* PDF / print */
+.pdf-page{break-after:page}
 @media print{
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
   body{background:#fff;color:#000}
-  .card{border:1px solid #ddd}
+  .card{border:1px solid #ddd;background:#fff}
   .summary-btn{display:none}
   thead th{position:static}
   thead tr.filters{display:none}
+  table, thead, tbody, tfoot, tr{break-inside: avoid}
 }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <!-- Updated page header -->
       <h1>Search Term Report Analysis without Pivot Tables</h1>
       <div class="input">
         <input type="file" id="file" accept=".csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx" />
@@ -85,10 +83,9 @@ hr.sep{border:0;border-top:1px solid #1f2937;margin:8px 0}
       <div class="help">Upload your SP Search Term Report. Required columns: <em>Product, Campaign ID, Ad Group ID, Keyword ID, Product Targeting ID, Campaign Name (Informational only), Ad Group Name (Informational only), Portfolio Name (Informational only), State, Campaign State (Informational only), Bid, Keyword Text, Match Type, Product Targeting Expression, Resolved Product Targeting Expression (Informational only), Customer Search Term, Impressions, Clicks, Click-through Rate, Spend, Sales, Orders, Units, Conversion Rate, ACOS, CPC, ROAS</em>. The tool recalculates CTR/CR/ACOS/CPC/ROAS.</div>
     </div>
 
-    <!-- Wrap the whole report for PDF export -->
+    <!-- Everything inside here is exported to PDF -->
     <div id="reportRoot">
-      <div class="card">
-        <!-- Headline + buttons -->
+      <div class="card pdf-page">
         <h2 class="summary-title">Profit Improvement via Bulk File Report</h2>
         <div class="summary-subtitle">Keep Spending on Highest Conversion Spots</div>
         <div class="summary-buttons">
@@ -149,7 +146,7 @@ hr.sep{border:0;border-top:1px solid #1f2937;margin:8px 0}
         <div class="help" style="margin-top:8px" id="bmm_ratio">Broad Mod spend / total spend: —</div>
       </div>
 
-      <div class="card">
+      <div class="card pdf-page">
         <h1>ACOS Tier (Keyword & Product Targeting only)</h1>
         <div style="overflow:auto">
           <table id="tbl-tiers">
@@ -191,7 +188,7 @@ hr.sep{border:0;border-top:1px solid #1f2937;margin:8px 0}
         </div>
       </div>
 
-      <div class="card">
+      <div class="card pdf-page">
         <h1>CVR Tier (Keyword & Product Targeting only)</h1>
         <div style="overflow:auto">
           <table id="tbl-cvr">
@@ -233,7 +230,7 @@ hr.sep{border:0;border-top:1px solid #1f2937;margin:8px 0}
         </div>
       </div>
 
-      <div class="card">
+      <div class="card pdf-page">
         <h1>Orders Bucket × ACOS Tier</h1>
         <div class="controls">
           <div class="chk" id="tierChecks"></div>
@@ -289,8 +286,7 @@ hr.sep{border:0;border-top:1px solid #1f2937;margin:8px 0}
         <div class="help">Pick any ACOS tiers (e.g., 30–40%, 40–50%, 50%+), choose a max bucket (e.g., 6 → 1,2,3,4,5,6+), then click “Build Buckets”.</div>
       </div>
 
-      <!-- NEW: 0-Order Click Buckets Section -->
-      <div class="card">
+      <div class="card pdf-page">
         <h1>0-Order Click Buckets (Spend Analysis)</h1>
         <div class="chart-wrap" style="margin-bottom:10px">
           <canvas id="zeroOrderClickChart" height="110"></canvas>
@@ -323,21 +319,11 @@ hr.sep{border:0;border-top:1px solid #1f2937;margin:8px 0}
         </div>
         <div class="help">Only rows with <b>Orders = 0</b> and <b>Clicks ≥ 1</b> are included. Use this to identify wasted spend thresholds.</div>
       </div>
-
     </div><!-- /#reportRoot -->
   </div>
 
 <script>
 /* -------------------- CONFIG + UTILS -------------------- */
-const requiredCols = [
-  "Product","Campaign ID","Ad Group ID","Keyword ID","Product Targeting ID",
-  "Campaign Name (Informational only)","Ad Group Name (Informational only)","Portfolio Name (Informational only)",
-  "State","Campaign State (Informational only)","Bid","Keyword Text","Match Type",
-  "Product Targeting Expression","Resolved Product Targeting Expression (Informational only)",
-  "Customer Search Term","Impressions","Clicks","Click-through Rate","Spend","Sales",
-  "Orders","Units","Conversion Rate","ACOS","CPC","ROAS"
-];
-
 const tierOrder = ["0%-5%","5%-10%","10%-20%","20%-30%","30%-40%","40%-50%","50%+","No Sales"];
 const cvrOrder  = ["0%-5%","5%-10%","10%-20%","20%-30%","30%-40%","40%-50%","50%+","No Orders"];
 
@@ -349,7 +335,7 @@ const int = v => Math.round(num(v)).toLocaleString();
 
 function recalc(row){
   const Impressions=num(row["Impressions"]), Clicks=num(row["Clicks"]),
-        Spend=num(row["Spend"]), Sales=num(row["Sales"]),
+        Spend=num(row["Spend"]), Sales=num(row["Sales"]||row["14 Day Total Sales"]||0),
         Orders=num(row["Orders"]), Units=num(row["Units"]);
   const CTR=(Impressions>0?Clicks/Impressions:0);
   const CR=(Clicks>0?Orders/Clicks:0);
@@ -417,7 +403,7 @@ function cvrFor(Orders, Clicks){
 }
 
 /* -------------------- BUILD TABLES -------------------- */
-let __ENRICHED = []; // for bucket & chart
+let __ENRICHED = []; // for buckets & chart
 
 function blankAgg(){ return {Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0,Units:0, rows:0}; }
 function addAgg(a,b){ a.Impressions+=b.Impressions||0; a.Clicks+=b.Clicks||0; a.Spend+=b.Spend||0; a.Sales+=b.Sales||0; a.Orders+=b.Orders||0; a.Units+=b.Units||0; a.rows+=(b.rows||0); }
@@ -520,22 +506,104 @@ function buildTables(rows){
   renderZeroOrderBuckets(enriched, totals);
 
   // Interactive tables
-  makeInteractive("tbl-class");
-  makeInteractive("tbl-tiers");
-  makeInteractive("tbl-cvr");
+  ["tbl-class","tbl-tiers","tbl-cvr","tbl-buckets","tbl-zeroBuckets"].forEach(makeInteractive);
+}
+
+/* -------------------- ORDERS x ACOS BUCKETS -------------------- */
+function buildOrderBuckets(){
+  const tbody = document.querySelector("#tbl-buckets tbody");
+  const tfoot = document.querySelector("#tbl-buckets tfoot");
+  tbody.innerHTML = ""; tfoot.innerHTML = "";
+
+  if (!__ENRICHED.length){ alert("Load a report first."); return; }
+
+  const chosen = [...document.querySelectorAll('#tierChecks input[type="checkbox"]:checked')].map(i=>i.value);
+  if (!chosen.length){ alert("Select at least one ACOS tier."); return; }
+
+  let maxB = parseInt(document.getElementById('maxBucket').value||"6",10);
+  if (!(maxB>=2)) maxB = 6;
+
+  const subset = __ENRICHED.filter(r=> chosen.includes(r.__tier));
+  const key = (b,t)=>`${b}||${t}`;
+  const map = new Map();
+  const totals = {Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0,Units:0,rows:0};
+
+  function aggAdd(dst, r){
+    dst.Impressions += r.Impressions; dst.Clicks += r.Clicks; dst.Spend += r.Spend;
+    dst.Sales += r.Sales; dst.Orders += r.Orders; dst.Units += r.Units; dst.rows = (dst.rows||0)+1;
+  }
+
+  for (const r of subset){
+    const bucket = (r.Orders >= maxB) ? `${maxB}+` : String(Math.max(0, Math.floor(r.Orders)));
+    const k = key(bucket, r.__tier);
+    if (!map.has(k)) map.set(k, {Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0,Units:0,rows:0});
+    aggAdd(map.get(k), r);
+    aggAdd(totals, r);
+  }
+
+  const bucketList = [];
+  for (let i=1;i<maxB;i++) bucketList.push(String(i));
+  bucketList.push(`${maxB}+`);
+
+  const tiersSorted = t => [...t].sort((a,b)=> tierOrder.indexOf(a)-tierOrder.indexOf(b));
+
+  for (const b of bucketList){
+    for (const t of tiersSorted(chosen)){
+      const a = map.get(key(b,t)) || {Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0,Units:0,rows:0};
+      const CTR = a.Impressions>0? a.Clicks/a.Impressions:0;
+      const CR  = a.Clicks>0? a.Orders/a.Clicks:0;
+      const ACOS= a.Sales>0? a.Spend/a.Sales : (a.Spend>0? Infinity:0);
+      const CPC = a.Clicks>0? a.Spend/a.Clicks:0;
+      renderRow([
+        `<td>${b}</td>`,
+        `<td>${t}</td>`,
+        `<td class="mono">${int(a.Impressions)}</td>`,
+        `<td class="mono">${int(a.Clicks)}</td>`,
+        `<td class="mono">${pct(CTR)}</td>`,
+        `<td class="mono">${money(a.Spend)}</td>`,
+        `<td class="mono">${money(a.Sales)}</td>`,
+        `<td class="mono">${int(a.Orders)}</td>`,
+        `<td class="mono">${int(a.Units)}</td>`,
+        `<td class="mono">${pct(CR)}</td>`,
+        `<td class="mono">${isFinite(ACOS)?pct(ACOS):"—"}</td>`,
+        `<td class="mono">${money(CPC)}</td>`,
+        `<td class="mono">—</td>`,
+        `<td class="mono">—</td>`,
+        `<td class="mono">${int(a.rows)}</td>`
+      ], tbody);
+    }
+  }
+
+  // Totals row
+  const CTRt = totals.Impressions>0? totals.Clicks/totals.Impressions:0;
+  const CRt  = totals.Clicks>0? totals.Orders/totals.Clicks:0;
+  const ACOSt= totals.Sales>0? totals.Spend/totals.Sales : (totals.Spend>0? Infinity:0);
+  const CPCt = totals.Clicks>0? totals.Spend/totals.Clicks:0;
+  renderRow([
+    `<td>TOTAL</td>`,
+    `<td>—</td>`,
+    `<td class="mono">${int(totals.Impressions)}</td>`,
+    `<td class="mono">${int(totals.Clicks)}</td>`,
+    `<td class="mono">${pct(CTRt)}</td>`,
+    `<td class="mono">${money(totals.Spend)}</td>`,
+    `<td class="mono">${money(totals.Sales)}</td>`,
+    `<td class="mono">${int(totals.Orders)}</td>`,
+    `<td class="mono">${int(totals.Units)}</td>`,
+    `<td class="mono">${pct(CRt)}</td>`,
+    `<td class="mono">${isFinite(ACOSt)?pct(ACOSt):"—"}</td>`,
+    `<td class="mono">${money(CPCt)}</td>`,
+    `<td class="mono">100.00%</td>`,
+    `<td class="mono">100.00%</td>`,
+    `<td class="mono">${int(subset.length)}</td>`
+  ], tfoot);
+
   makeInteractive("tbl-buckets");
-  makeInteractive("tbl-zeroBuckets");
 }
 
 /* -------------------- 0-ORDER CLICK BUCKETS -------------------- */
-function zeroBucketsAgg(){
-  return {keywords:0, clicks:0, spend:0};
-}
+function zeroBucketsAgg(){ return {keywords:0, clicks:0, spend:0}; }
 function renderZeroOrderBuckets(rows, grandTotals){
-  // Filter: Orders == 0 and Clicks >= 1
   const zeroRows = rows.filter(r => r.Orders===0 && r.Clicks>=1);
-
-  // Totals for denominator
   const zeroSpendTotal = zeroRows.reduce((s,r)=>s+r.Spend, 0);
   const totalSpend = grandTotals.Spend || 0;
 
@@ -559,12 +627,9 @@ function renderZeroOrderBuckets(rows, grandTotals){
   }
 
   zeroRows.forEach(r=>{
-    const b = bucketOf(r.Clicks);
-    if (!b) return;
-    const agg = buckets.get(b);
-    agg.keywords += 1;
-    agg.clicks   += r.Clicks;
-    agg.spend    += r.Spend;
+    const b = bucketOf(r.Clicks); if (!b) return;
+    const a = buckets.get(b);
+    a.keywords += 1; a.clicks += r.Clicks; a.spend += r.Spend;
   });
 
   // Build table
@@ -573,55 +638,52 @@ function renderZeroOrderBuckets(rows, grandTotals){
   body.innerHTML=""; foot.innerHTML="";
   let sumKeywords=0, sumClicks=0, sumSpend=0;
 
-  for (const [name, agg] of buckets.entries()){
-    sumKeywords += agg.keywords;
-    sumClicks   += agg.clicks;
-    sumSpend    += agg.spend;
+  for (const [name, a] of buckets.entries()){
+    sumKeywords += a.keywords; sumClicks += a.clicks; sumSpend += a.spend;
+    const avgCpc = a.clicks>0 ? a.spend/a.clicks : 0;
+    const pctZero = zeroSpendTotal>0 ? a.spend/zeroSpendTotal : 0;
+    const pctTotal= totalSpend>0 ? a.spend/totalSpend : 0;
 
-    const avgCpc = agg.clicks>0 ? agg.spend/agg.clicks : 0;
-    const pctZero = zeroSpendTotal>0 ? agg.spend/zeroSpendTotal : 0;
-    const pctTotal= totalSpend>0 ? agg.spend/totalSpend : 0;
-
-    const cells = [
+    renderRow([
       `<td>${name}</td>`,
-      `<td class="mono">${int(agg.keywords)}</td>`,
-      `<td class="mono">${int(agg.clicks)}</td>`,
-      `<td class="mono">${money(agg.spend)}</td>`,
+      `<td class="mono">${int(a.keywords)}</td>`,
+      `<td class="mono">${int(a.clicks)}</td>`,
+      `<td class="mono">${money(a.spend)}</td>`,
       `<td class="mono">${money(avgCpc)}</td>`,
       `<td class="mono">${pct(pctZero)}</td>`,
       `<td class="mono">${pct(pctTotal)}</td>`
-    ];
-    renderRow(cells, body);
+    ], body);
   }
 
-  const footCells = [
+  renderRow([
     `<td>TOTAL</td>`,
     `<td class="mono">${int(sumKeywords)}</td>`,
     `<td class="mono">${int(sumClicks)}</td>`,
-    `<td class="mono">${money(sumSpend)}</td>`,
+    `<td class="mono"><strong>$${money(sumSpend)}</strong></td>`,
     `<td class="mono">${money(sumClicks>0 ? sumSpend/sumClicks : 0)}</td>`,
     `<td class="mono">${pct(zeroSpendTotal>0 ? sumSpend/zeroSpendTotal : 0)}</td>`,
     `<td class="mono">${pct(totalSpend>0 ? sumSpend/totalSpend : 0)}</td>`
-  ];
-  renderRow(footCells, foot);
+  ], foot);
 
-  // Draw chart
-  const labels = Array.from(buckets.keys());
-  const data = labels.map(l => (buckets.get(l).spend||0).toFixed(2));
+  // Chart (light→dark fill by spend)
+  const labels = [...buckets.keys()];
+  const spends = labels.map(l => buckets.get(l).spend||0);
+  const max = Math.max(...spends,1);
+  const bg = spends.map(v=>{
+    const t=v/max; const hue=220-(t*40); const L=72-(t*42);
+    return `hsl(${hue} 85% ${L}%)`;
+  });
+  const brd = spends.map(v=>{
+    const t=v/max; const hue=220-(t*40); const L=55-(t*35);
+    return `hsl(${hue} 90% ${L}%)`;
+  });
+
   const ctx = document.getElementById('zeroOrderClickChart').getContext('2d');
   if (window.__zeroChart) window.__zeroChart.destroy();
   window.__zeroChart = new Chart(ctx, {
     type: 'bar',
-    data: {
-      labels,
-      datasets: [{ label: 'Spend ($) — 0-Order Buckets', data }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: { y: { beginAtZero: true } },
-      plugins: { legend: { display: false } }
-    }
+    data: { labels, datasets: [{ label: 'Spend ($) — 0-Order Buckets', data: spends, backgroundColor: bg, borderColor: brd, borderWidth: 1 }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
   });
 }
 
@@ -632,18 +694,11 @@ function sanitizeNumeric(text){
   if (s.endsWith('%')) return parseFloat(s.slice(0,-1));
   return parseFloat(s);
 }
-function detectNumeric(cellText){
-  const v=sanitizeNumeric(cellText);
-  return !isNaN(v);
-}
+function detectNumeric(cellText){ return !isNaN(sanitizeNumeric(cellText)); }
 function comparatorFactory(idx, numeric){
   return (a,b)=>{
-    const ta=a.children[idx].textContent;
-    const tb=b.children[idx].textContent;
-    if (numeric){
-      const na=sanitizeNumeric(ta), nb=sanitizeNumeric(tb);
-      return (na-nb);
-    }
+    const ta=a.children[idx].textContent, tb=b.children[idx].textContent;
+    if (numeric){ return sanitizeNumeric(ta)-sanitizeNumeric(tb); }
     return ta.localeCompare(tb, undefined, {numeric:true, sensitivity:'base'});
   };
 }
@@ -654,8 +709,7 @@ function parseFilterExp(exp){
   if (m){
     const op=m[1], val=parseFloat(m[2]);
     return cell=>{
-      const n=sanitizeNumeric(cell.replace('%',''));
-      if (isNaN(n)) return false;
+      const n=sanitizeNumeric(cell.replace('%','')); if (isNaN(n)) return false;
       if (op==='>')  return n>val;
       if (op==='>=') return n>=val;
       if (op==='<')  return n<val;
@@ -743,17 +797,24 @@ function exportPDF(){
   const pad = n=>String(n).padStart(2,'0');
   const fname = `Search-Term-Report_${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}.pdf`;
   const opt = {
-    margin:       [0.3, 0.3, 0.3, 0.3],
-    filename:     fname,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true },
-    jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
-    pagebreak:    { mode: ['css', 'legacy'] }
+    margin: [0.35, 0.35, 0.35, 0.35],
+    filename: fname,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+    pagebreak: { mode: ['css'] } // CSS .pdf-page does the pagination
   };
-  html2pdf().from(el).set(opt).save();
+  try{
+    html2pdf().from(el).set(opt).save();
+  }catch(e){
+    alert("PDF export failed: " + (e?.message || e));
+  }
 }
 document.getElementById('btnPdf').addEventListener('click', exportPDF);
 document.getElementById('btnPdf2').addEventListener('click', exportPDF);
+
+// Wire the buckets button
+document.getElementById('buildBuckets').addEventListener('click', buildOrderBuckets);
 </script>
 </body>
 </html>

@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Search Term Report Analysis without Pivot Tables</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+<!-- Chart for 0-order click buckets -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{--bg:#0b0d10;--panel:#11151a;--accent:#4f66ff;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 'Inter',system-ui}
+.wrap{max-width:1200px;margin:24px auto;padding:0 16px}
+h1{font-size:18px;margin:0 0 12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0}
+.input{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.badge{display:inline-block;background:#18212b;border:1px solid #223042;border-radius:10px;padding:2px 8px;color:#c6d0dc;font-size:12px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{position:sticky;top:0;background:var(--panel);z-index:2;cursor:pointer}
+thead tr.filters th{position:sticky;top:36px;background:#0e141b;z-index:1;cursor:default}
+thead input{width:100%;background:#0b0f14;border:1px solid #1d2631;border-radius:8px;padding:6px 8px;color:var(--text);font:12px}
+tfoot td{font-weight:700;background:#0e1217}
+.mono{font-variant-numeric:tabular-nums}
+.kpi{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.kpi .box{background:#0f1318;border:1px solid #1f2937;border-radius:12px;padding:10px 12px;min-width:120px}
+.kpi small{color:var(--muted);display:block;margin-bottom:4px}
+.kpi .val{font-weight:700}
+.btn{background:var(--accent);color:white;border:0;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.help{color:var(--muted);font-size:12px}
+th.sort-asc::after{content:" ▲";font-size:10px;color:var(--muted)}
+th.sort-desc::after{content:" ▼";font-size:10px;color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:8px}
+.chk{display:flex;gap:8px;flex-wrap:wrap}
+.chk label{display:inline-flex;align-items:center;gap:6px;background:#0b0f14;border:1px solid #1d2631;border-radius:999px;padding:6px 10px;font-size:12px}
+input[type="number"]{background:#0b0f14;border:1px solid #1d2631;border-radius:8px;padding:6px 8px;color:var(--text);width:80px}
+hr.sep{border:0;border-top:1px solid #1f2937;margin:8px 0}
+
+/* Summary title + buttons */
+.summary-title{
+  font-size:22px;font-weight:700;line-height:1.35;margin:0 0 4px;color:var(--text)
+}
+.summary-subtitle{font-size:16px;color:var(--muted);font-weight:400}
+.summary-buttons{display:flex;gap:12px;margin:12px 0 10px;flex-wrap:wrap}
+.summary-btn{
+  background:var(--accent);color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:600
+}
+.summary-btn:hover{filter:brightness(1.05)}
+.summary-btn.outline{background:transparent;border:1px solid var(--accent);color:var(--text)}
+.summary-btn.outline:hover{background:#0e141b}
+
+/* Chart wrapper */
+.chart-wrap{padding:10px;background:#0f1318;border:1px solid #1f2937;border-radius:12px}
+
+/* Print tweaks */
+@media print{
+  body{background:#fff;color:#000}
+  .card{border:1px solid #ddd}
+  .summary-btn{display:none}
+  thead th{position:static}
+  thead tr.filters{display:none}
+}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <!-- Updated page header -->
+      <h1>Search Term Report Analysis without Pivot Tables</h1>
+      <div class="input">
+        <input type="file" id="file" accept=".csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx" />
+        <button class="btn" id="demo">Load Demo Header Check</button>
+        <button class="btn" id="btnPdf">Download PDF</button>
+        <span class="badge" id="stamp">Last Updated: —</span>
+      </div>
+      <div class="help">Upload your SP Search Term Report. Required columns: <em>Product, Campaign ID, Ad Group ID, Keyword ID, Product Targeting ID, Campaign Name (Informational only), Ad Group Name (Informational only), Portfolio Name (Informational only), State, Campaign State (Informational only), Bid, Keyword Text, Match Type, Product Targeting Expression, Resolved Product Targeting Expression (Informational only), Customer Search Term, Impressions, Clicks, Click-through Rate, Spend, Sales, Orders, Units, Conversion Rate, ACOS, CPC, ROAS</em>. The tool recalculates CTR/CR/ACOS/CPC/ROAS.</div>
+    </div>
+
+    <!-- Wrap the whole report for PDF export -->
+    <div id="reportRoot">
+      <div class="card">
+        <!-- Headline + buttons -->
+        <h2 class="summary-title">Profit Improvement via Bulk File Report</h2>
+        <div class="summary-subtitle">Keep Spending on Highest Conversion Spots</div>
+        <div class="summary-buttons">
+          <a class="summary-btn" target="_blank" rel="noopener" href="https://calendly.com/m-farhanwaqar/30min">Book a Call</a>
+          <a class="summary-btn" target="_blank" rel="noopener" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9">Ranking Case Study</a>
+          <a class="summary-btn outline" href="javascript:void(0)" id="btnPdf2">Download PDF</a>
+        </div>
+
+        <!-- KPI SUMMARY -->
+        <div class="kpi">
+          <div class="box"><small>Total Impr.</small><div id="k_impr" class="val mono">—</div></div>
+          <div class="box"><small>Total Clicks</small><div id="k_clicks" class="val mono">—</div></div>
+          <div class="box"><small>Total Spend</small><div id="k_spend" class="val mono">—</div></div>
+          <div class="box"><small>Total Sales</small><div id="k_sales" class="val mono">—</div></div>
+          <div class="box"><small>CTR</small><div id="k_ctr" class="val mono">—</div></div>
+          <div class="box"><small>Conversion Rate</small><div id="k_cvr" class="val mono">—</div></div>
+          <div class="box"><small>ACOS</small><div id="k_acos" class="val mono">—</div></div>
+        </div>
+
+        <div style="overflow:auto;margin-top:6px">
+          <table id="tbl-class">
+            <thead>
+              <tr>
+                <th>Targeting Classification</th>
+                <th>Impressions</th>
+                <th>Clicks</th>
+                <th>Click-through Rate</th>
+                <th>Spend</th>
+                <th>Sales</th>
+                <th>Orders</th>
+                <th>Units</th>
+                <th>Conversion Rate</th>
+                <th>ACOS</th>
+                <th>CPC</th>
+                <th>% Sales</th>
+                <th>% Spend</th>
+              </tr>
+              <tr class="filters">
+                <th><input placeholder="filter…"></th>
+                <th><input placeholder="e.g. >10000"></th>
+                <th><input placeholder="e.g. >100"></th>
+                <th><input placeholder="e.g. >1%"></th>
+                <th><input placeholder="e.g. <500"></th>
+                <th><input placeholder="e.g. >0"></th>
+                <th><input placeholder="e.g. =0"></th>
+                <th><input placeholder="e.g. >0"></th>
+                <th><input placeholder="e.g. >10%"></th>
+                <th><input placeholder="e.g. <25%"></th>
+                <th><input placeholder="e.g. <1.5"></th>
+                <th><input placeholder="e.g. >5%"></th>
+                <th><input placeholder="e.g. >5%"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+        <div class="help" style="margin-top:8px" id="bmm_ratio">Broad Mod spend / total spend: —</div>
+      </div>
+
+      <div class="card">
+        <h1>ACOS Tier (Keyword & Product Targeting only)</h1>
+        <div style="overflow:auto">
+          <table id="tbl-tiers">
+            <thead>
+              <tr>
+                <th>ACOS Tier</th>
+                <th>Impressions</th>
+                <th>Clicks</th>
+                <th>Click-through Rate</th>
+                <th>Spend</th>
+                <th>Sales</th>
+                <th>Orders</th>
+                <th>Units</th>
+                <th>Conversion Rate</th>
+                <th>ACOS</th>
+                <th>CPC</th>
+                <th>% Sales</th>
+                <th>% Spend</th>
+              </tr>
+              <tr class="filters">
+                <th><input placeholder="filter…"></th>
+                <th><input placeholder="e.g. >10000"></th>
+                <th><input placeholder="e.g. >100"></th>
+                <th><input placeholder="e.g. >1%"></th>
+                <th><input placeholder="e.g. <500"></th>
+                <th><input placeholder="e.g. >0"></th>
+                <th><input placeholder="e.g. =0"></th>
+                <th><input placeholder="e.g. >0"></th>
+                <th><input placeholder="e.g. >10%"></th>
+                <th><input placeholder="e.g. <25%"></th>
+                <th><input placeholder="e.g. <1.5"></th>
+                <th><input placeholder="e.g. >5%"></th>
+                <th><input placeholder="e.g. >5%"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h1>CVR Tier (Keyword & Product Targeting only)</h1>
+        <div style="overflow:auto">
+          <table id="tbl-cvr">
+            <thead>
+              <tr>
+                <th>CVR Tier</th>
+                <th>Impressions</th>
+                <th>Clicks</th>
+                <th>Click-through Rate</th>
+                <th>Spend</th>
+                <th>Sales</th>
+                <th>Orders</th>
+                <th>Units</th>
+                <th>Conversion Rate</th>
+                <th>ACOS</th>
+                <th>CPC</th>
+                <th>% Sales</th>
+                <th>% Spend</th>
+              </tr>
+              <tr class="filters">
+                <th><input placeholder="filter…"></th>
+                <th><input placeholder="e.g. >10000"></th>
+                <th><input placeholder="e.g. >100"></th>
+                <th><input placeholder="e.g. >1%"></th>
+                <th><input placeholder="e.g. <500"></th>
+                <th><input placeholder="e.g. >0"></th>
+                <th><input placeholder="e.g. =0"></th>
+                <th><input placeholder="e.g. >0"></th>
+                <th><input placeholder="e.g. >10%"></th>
+                <th><input placeholder="e.g. <25%"></th>
+                <th><input placeholder="e.g. <1.5"></th>
+                <th><input placeholder="e.g. >5%"></th>
+                <th><input placeholder="e.g. >5%"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h1>Orders Bucket × ACOS Tier</h1>
+        <div class="controls">
+          <div class="chk" id="tierChecks"></div>
+          <div>
+            <label>Max bucket</label>
+            <input type="number" id="maxBucket" min="2" step="1" value="6" />
+          </div>
+          <button class="btn" id="buildBuckets">Build Buckets</button>
+        </div>
+        <hr class="sep">
+        <div style="overflow:auto">
+          <table id="tbl-buckets">
+            <thead>
+              <tr>
+                <th>Orders Bucket</th>
+                <th>ACOS Tier</th>
+                <th>Impressions</th>
+                <th>Clicks</th>
+                <th>Click-through Rate</th>
+                <th>Spend</th>
+                <th>Sales</th>
+                <th>Orders</th>
+                <th>Units</th>
+                <th>Conversion Rate</th>
+                <th>ACOS</th>
+                <th>CPC</th>
+                <th>% Sales</th>
+                <th>% Spend</th>
+                <th>Keyword Count</th>
+              </tr>
+              <tr class="filters">
+                <th><input placeholder="e.g. 1 or 6+"></th>
+                <th><input placeholder="e.g. 50%+"></th>
+                <th><input placeholder=">10000"></th>
+                <th><input placeholder=">100"></th>
+                <th><input placeholder=">1%"></th>
+                <th><input placeholder="<500"></th>
+                <th><input placeholder=">0"></th>
+                <th><input placeholder=">=1"></th>
+                <th><input placeholder=">=1"></th>
+                <th><input placeholder=">10%"></th>
+                <th><input placeholder="<25%"></th>
+                <th><input placeholder="<1.5"></th>
+                <th><input placeholder=">5%"></th>
+                <th><input placeholder=">5%"></th>
+                <th><input placeholder=">=1"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+        <div class="help">Pick any ACOS tiers (e.g., 30–40%, 40–50%, 50%+), choose a max bucket (e.g., 6 → 1,2,3,4,5,6+), then click “Build Buckets”.</div>
+      </div>
+
+      <!-- NEW: 0-Order Click Buckets Section -->
+      <div class="card">
+        <h1>0-Order Click Buckets (Spend Analysis)</h1>
+        <div class="chart-wrap" style="margin-bottom:10px">
+          <canvas id="zeroOrderClickChart" height="110"></canvas>
+        </div>
+        <div style="overflow:auto">
+          <table id="tbl-zeroBuckets">
+            <thead>
+              <tr>
+                <th>Click Bucket</th>
+                <th>Keyword Count</th>
+                <th>Total Clicks</th>
+                <th>Total Spend</th>
+                <th>Avg CPC</th>
+                <th>% of Zero-Order Spend</th>
+                <th>% of Total Spend</th>
+              </tr>
+              <tr class="filters">
+                <th><input placeholder="e.g. >15 Clicks"></th>
+                <th><input placeholder=">=1"></th>
+                <th><input placeholder=">=0"></th>
+                <th><input placeholder=">0"></th>
+                <th><input placeholder="<1.5"></th>
+                <th><input placeholder=">10%"></th>
+                <th><input placeholder=">5%"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+        <div class="help">Only rows with <b>Orders = 0</b> and <b>Clicks ≥ 1</b> are included. Use this to identify wasted spend thresholds.</div>
+      </div>
+
+    </div><!-- /#reportRoot -->
+  </div>
+
+<script>
+/* -------------------- CONFIG + UTILS -------------------- */
+const requiredCols = [
+  "Product","Campaign ID","Ad Group ID","Keyword ID","Product Targeting ID",
+  "Campaign Name (Informational only)","Ad Group Name (Informational only)","Portfolio Name (Informational only)",
+  "State","Campaign State (Informational only)","Bid","Keyword Text","Match Type",
+  "Product Targeting Expression","Resolved Product Targeting Expression (Informational only)",
+  "Customer Search Term","Impressions","Clicks","Click-through Rate","Spend","Sales",
+  "Orders","Units","Conversion Rate","ACOS","CPC","ROAS"
+];
+
+const tierOrder = ["0%-5%","5%-10%","10%-20%","20%-30%","30%-40%","40%-50%","50%+","No Sales"];
+const cvrOrder  = ["0%-5%","5%-10%","10%-20%","20%-30%","30%-40%","40%-50%","50%+","No Orders"];
+
+const num = v => { if (v==null) return 0; if (typeof v==='number') return v;
+  const s=(''+v).replace(/[, $%]/g,'').trim(); const n=parseFloat(s); return isNaN(n)?0:n; };
+const pct = v => isFinite(v) ? (v*100).toFixed(2)+'%' : '0.00%';
+const money = v => num(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const int = v => Math.round(num(v)).toLocaleString();
+
+function recalc(row){
+  const Impressions=num(row["Impressions"]), Clicks=num(row["Clicks"]),
+        Spend=num(row["Spend"]), Sales=num(row["Sales"]),
+        Orders=num(row["Orders"]), Units=num(row["Units"]);
+  const CTR=(Impressions>0?Clicks/Impressions:0);
+  const CR=(Clicks>0?Orders/Clicks:0);
+  const ACOS=(Sales>0?Spend/Sales:(Spend>0?Infinity:0));
+  const CPC=(Clicks>0?Spend/Clicks:0);
+  const ROAS=(Spend>0?Sales/Spend:0);
+  return {Impressions,Clicks,Spend,Sales,Orders,Units,CTR,CR,ACOS,CPC,ROAS};
+}
+
+/* -------------------- CLASSIFICATION -------------------- */
+function classify(row){
+  const mtRaw=(row["Match Type"]||"").toString();
+  const kw=(row["Keyword Text"]||"").toString().trim();
+  const pteRaw=(row["Product Targeting Expression"]||"").toString();
+  const rpteRaw=(row["Resolved Product Targeting Expression (Informational only)"]||"").toString();
+
+  const norm=s=>s.toLowerCase().replace(/[_\-]+/g,' ').trim();
+  const mt=norm(mtRaw), pte=norm(pteRaw), rpte=norm(rpteRaw);
+  const hay=[mt,pte,rpte].join(" | ");
+
+  const hasASIN=/(^|[^a-z0-9])(b0[0-9a-z]{8})([^a-z0-9]|$)/i.test(pteRaw) ||
+                /(^|[^a-z0-9])(b0[0-9a-z]{8})([^a-z0-9]|$)/i.test(rpteRaw) ||
+                /\basin\s*[:=]/i.test(pteRaw) || /\basin\s*[:=]/i.test(rpteRaw);
+
+  if (/\bclose match\b/.test(hay)) return "Auto Close";
+  if (/\bloose match\b/.test(hay)) return "Loose";
+  if (/\bsubstitutes?\b/.test(hay)) return "Substitute";
+  if (/\bcomplements?\b|\bcomplementary\b/.test(hay)) return "Complementary";
+
+  if (/\bexact\b/.test(mt)) return "Exact";
+  if (/\bphrase\b/.test(mt)) return "Phrase";
+  if (/\bbroad\b/.test(mt)){ if (/\+[\S]+/.test(kw)) return "Broad Mod"; return "Broad"; }
+
+  if (/\bexpanded product targeting\b|\bexpanded\b/.test(hay)) return "PT (ASIN) Expanded";
+  if (hasASIN) return "PT (ASIN)";
+  const looksCategory=/\bcategory\b|\basinCategorySameAs\b|\basinBrandEquals\b|\bbrand\b|\bprice\b|\brating\b/.test(hay);
+  if (looksCategory && !hasASIN) return "Category";
+
+  if (/\+[\S]+/.test(kw)) return "Broad Mod";
+  if (kw && !pteRaw) return "Broad";
+  return "Unclassified";
+}
+
+function tierFor(ACOS, Sales){
+  if (Sales<=0 || !isFinite(ACOS)) return "No Sales";
+  const p=ACOS*100;
+  if (p<5) return "0%-5%";
+  if (p<10) return "5%-10%";
+  if (p<20) return "10%-20%";
+  if (p<30) return "20%-30%";
+  if (p<40) return "30%-40%";
+  if (p<50) return "40%-50%";
+  return "50%+";
+}
+function cvrFor(Orders, Clicks){
+  if (Orders===0 || Clicks<=0) return "No Orders";
+  const p=(Orders/Clicks)*100;
+  if (p<5) return "0%-5%";
+  if (p<10) return "5%-10%";
+  if (p<20) return "10%-20%";
+  if (p<30) return "20%-30%";
+  if (p<40) return "30%-40%";
+  if (p<50) return "40%-50%";
+  return "50%+";
+}
+
+/* -------------------- BUILD TABLES -------------------- */
+let __ENRICHED = []; // for bucket & chart
+
+function blankAgg(){ return {Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0,Units:0, rows:0}; }
+function addAgg(a,b){ a.Impressions+=b.Impressions||0; a.Clicks+=b.Clicks||0; a.Spend+=b.Spend||0; a.Sales+=b.Sales||0; a.Orders+=b.Orders||0; a.Units+=b.Units||0; a.rows+=(b.rows||0); }
+
+function renderRow(cells, parent){ const tr=document.createElement('tr'); tr.innerHTML=cells.join(''); parent.appendChild(tr); }
+
+function cellsFor(label1, label2, agg, totals){
+  const CTR = agg.Impressions>0? agg.Clicks/agg.Impressions:0;
+  const CR  = agg.Clicks>0? agg.Orders/agg.Clicks:0;
+  const ACOS= agg.Sales>0? agg.Spend/agg.Sales : (agg.Spend>0? Infinity:0);
+  const CPC = agg.Clicks>0? agg.Spend/agg.Clicks:0;
+  const pctSales = totals.Sales>0? agg.Sales/totals.Sales:0;
+  const pctSpend = totals.Spend>0? agg.Spend/totals.Spend:0;
+  const first = (label2===null||label2===undefined)
+    ? [`<td>${label1}</td>`]
+    : [`<td>${label1}</td>`,`<td>${label2}</td>`];
+
+  return first.concat([
+    `<td class="mono">${int(agg.Impressions)}</td>`,
+    `<td class="mono">${int(agg.Clicks)}</td>`,
+    `<td class="mono">${pct(CTR)}</td>`,
+    `<td class="mono">${money(agg.Spend)}</td>`,
+    `<td class="mono">${money(agg.Sales)}</td>`,
+    `<td class="mono">${int(agg.Orders)}</td>`,
+    `<td class="mono">${int(agg.Units)}</td>`,
+    `<td class="mono">${pct(CR)}</td>`,
+    `<td class="mono">${isFinite(ACOS)? pct(ACOS): "—"}</td>`,
+    `<td class="mono">${money(CPC)}</td>`,
+    `<td class="mono">${pct(pctSales)}</td>`,
+    `<td class="mono">${pct(pctSpend)}</td>`
+  ]);
+}
+
+function updateSummaryBoxes(totals){
+  const CTR = totals.Impressions>0 ? totals.Clicks/totals.Impressions : 0;
+  const CVR = totals.Clicks>0 ? totals.Orders/totals.Clicks : 0;
+  const ACOS= totals.Sales>0 ? totals.Spend/totals.Sales : (totals.Spend>0? Infinity: 0);
+
+  document.getElementById('k_impr').textContent = int(totals.Impressions);
+  document.getElementById('k_clicks').textContent = int(totals.Clicks);
+  document.getElementById('k_spend').textContent = '$'+money(totals.Spend);
+  document.getElementById('k_sales').textContent = '$'+money(totals.Sales);
+  document.getElementById('k_ctr').textContent = pct(CTR);
+  document.getElementById('k_cvr').textContent = pct(CVR);
+  document.getElementById('k_acos').textContent = isFinite(ACOS) ? pct(ACOS) : '—';
+}
+
+function buildTables(rows){
+  const enriched = rows.map(r=>{
+    const m=recalc(r);
+    const cls=classify(r);
+    const tier=tierFor(m.ACOS, m.Sales);
+    const cvr =cvrFor(m.Orders, m.Clicks);
+    return {...r, ...m, __class:cls, __tier:tier, __cvr:cvr};
+  });
+  __ENRICHED = enriched;
+
+  const totals = {Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0,Units:0};
+  enriched.forEach(r=>{ totals.Impressions+=r.Impressions; totals.Clicks+=r.Clicks; totals.Spend+=r.Spend; totals.Sales+=r.Sales; totals.Orders+=r.Orders; totals.Units+=r.Units; });
+  updateSummaryBoxes(totals);
+
+  // Classification
+  const byClass=new Map();
+  for (const r of enriched){ const k=r.__class; if(!byClass.has(k)) byClass.set(k, blankAgg()); addAgg(byClass.get(k), {...r, rows:1}); }
+  const order=["Loose","Broad","Substitute","Auto Close","Phrase","Broad Mod","Category","PT (ASIN)","Complementary","Exact","PT (ASIN) Expanded","Unclassified"];
+  const bodyC=document.querySelector("#tbl-class tbody"), footC=document.querySelector("#tbl-class tfoot");
+  bodyC.innerHTML=""; footC.innerHTML="";
+  let broadModSpend=0;
+  for (const key of order){ const agg=(byClass.get(key)||blankAgg()); if (key==="Broad Mod") broadModSpend=agg.Spend; renderRow(cellsFor(key,null,agg,totals), bodyC); }
+  renderRow(cellsFor("TOTAL",null,totals,totals), footC);
+  document.getElementById('bmm_ratio').textContent = `Broad Mod spend / total spend: ${totals.Spend>0? ( (broadModSpend/totals.Spend)*100 ).toFixed(2)+'%':'0.00%'}`;
+
+  // ACOS Tier
+  const byTier=new Map();
+  for (const r of enriched){ const k=r.__tier; if(!byTier.has(k)) byTier.set(k, blankAgg()); addAgg(byTier.get(k), {...r, rows:1}); }
+  const bodyT=document.querySelector("#tbl-tiers tbody"), footT=document.querySelector("#tbl-tiers tfoot");
+  bodyT.innerHTML=""; footT.innerHTML="";
+  for (const key of tierOrder){ const agg=(byTier.get(key)||blankAgg()); renderRow(cellsFor(key,null,agg,totals), bodyT); }
+  renderRow(cellsFor("TOTAL",null,totals,totals), footT);
+
+  // CVR Tier
+  const byCVR=new Map();
+  for (const r of enriched){ const k=r.__cvr; if(!byCVR.has(k)) byCVR.set(k, blankAgg()); addAgg(byCVR.get(k), {...r, rows:1}); }
+  const bodyCVR=document.querySelector("#tbl-cvr tbody"), footCVR=document.querySelector("#tbl-cvr tfoot");
+  bodyCVR.innerHTML=""; footCVR.innerHTML="";
+  for (const key of cvrOrder){ const agg=(byCVR.get(key)||blankAgg()); renderRow(cellsFor(key,null,agg,totals), bodyCVR); }
+  renderRow(cellsFor("TOTAL",null,totals,totals), footCVR);
+
+  // ACOS tier checkboxes for buckets
+  const box = document.getElementById('tierChecks');
+  box.innerHTML = "";
+  tierOrder.forEach(t=>{
+    if (t==="No Sales") return;
+    const lab = document.createElement('label');
+    lab.innerHTML = `<input type="checkbox" value="${t}" ${["30%-40%","40%-50%","50%+"].includes(t)?"checked":""}/> ${t}`;
+    box.appendChild(lab);
+  });
+
+  // 0-Order Click Buckets
+  renderZeroOrderBuckets(enriched, totals);
+
+  // Interactive tables
+  makeInteractive("tbl-class");
+  makeInteractive("tbl-tiers");
+  makeInteractive("tbl-cvr");
+  makeInteractive("tbl-buckets");
+  makeInteractive("tbl-zeroBuckets");
+}
+
+/* -------------------- 0-ORDER CLICK BUCKETS -------------------- */
+function zeroBucketsAgg(){
+  return {keywords:0, clicks:0, spend:0};
+}
+function renderZeroOrderBuckets(rows, grandTotals){
+  // Filter: Orders == 0 and Clicks >= 1
+  const zeroRows = rows.filter(r => r.Orders===0 && r.Clicks>=1);
+
+  // Totals for denominator
+  const zeroSpendTotal = zeroRows.reduce((s,r)=>s+r.Spend, 0);
+  const totalSpend = grandTotals.Spend || 0;
+
+  const buckets = new Map([
+    ["1 Click", zeroBucketsAgg()],
+    ["2 Clicks", zeroBucketsAgg()],
+    ["3-5 Clicks", zeroBucketsAgg()],
+    ["6-10 Clicks", zeroBucketsAgg()],
+    ["11-15 Clicks", zeroBucketsAgg()],
+    [">15 Clicks", zeroBucketsAgg()],
+  ]);
+
+  function bucketOf(c){
+    if (c===1) return "1 Click";
+    if (c===2) return "2 Clicks";
+    if (c>=3 && c<=5) return "3-5 Clicks";
+    if (c>=6 && c<=10) return "6-10 Clicks";
+    if (c>=11 && c<=15) return "11-15 Clicks";
+    if (c>15) return ">15 Clicks";
+    return null;
+  }
+
+  zeroRows.forEach(r=>{
+    const b = bucketOf(r.Clicks);
+    if (!b) return;
+    const agg = buckets.get(b);
+    agg.keywords += 1;
+    agg.clicks   += r.Clicks;
+    agg.spend    += r.Spend;
+  });
+
+  // Build table
+  const body = document.querySelector("#tbl-zeroBuckets tbody");
+  const foot = document.querySelector("#tbl-zeroBuckets tfoot");
+  body.innerHTML=""; foot.innerHTML="";
+  let sumKeywords=0, sumClicks=0, sumSpend=0;
+
+  for (const [name, agg] of buckets.entries()){
+    sumKeywords += agg.keywords;
+    sumClicks   += agg.clicks;
+    sumSpend    += agg.spend;
+
+    const avgCpc = agg.clicks>0 ? agg.spend/agg.clicks : 0;
+    const pctZero = zeroSpendTotal>0 ? agg.spend/zeroSpendTotal : 0;
+    const pctTotal= totalSpend>0 ? agg.spend/totalSpend : 0;
+
+    const cells = [
+      `<td>${name}</td>`,
+      `<td class="mono">${int(agg.keywords)}</td>`,
+      `<td class="mono">${int(agg.clicks)}</td>`,
+      `<td class="mono">${money(agg.spend)}</td>`,
+      `<td class="mono">${money(avgCpc)}</td>`,
+      `<td class="mono">${pct(pctZero)}</td>`,
+      `<td class="mono">${pct(pctTotal)}</td>`
+    ];
+    renderRow(cells, body);
+  }
+
+  const footCells = [
+    `<td>TOTAL</td>`,
+    `<td class="mono">${int(sumKeywords)}</td>`,
+    `<td class="mono">${int(sumClicks)}</td>`,
+    `<td class="mono">${money(sumSpend)}</td>`,
+    `<td class="mono">${money(sumClicks>0 ? sumSpend/sumClicks : 0)}</td>`,
+    `<td class="mono">${pct(zeroSpendTotal>0 ? sumSpend/zeroSpendTotal : 0)}</td>`,
+    `<td class="mono">${pct(totalSpend>0 ? sumSpend/totalSpend : 0)}</td>`
+  ];
+  renderRow(footCells, foot);
+
+  // Draw chart
+  const labels = Array.from(buckets.keys());
+  const data = labels.map(l => (buckets.get(l).spend||0).toFixed(2));
+  const ctx = document.getElementById('zeroOrderClickChart').getContext('2d');
+  if (window.__zeroChart) window.__zeroChart.destroy();
+  window.__zeroChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Spend ($) — 0-Order Buckets', data }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+/* -------------------- SORT/FILTER HELPERS -------------------- */
+function sanitizeNumeric(text){
+  if (text==null) return NaN;
+  const s=String(text).replace(/[, $]/g,'').trim();
+  if (s.endsWith('%')) return parseFloat(s.slice(0,-1));
+  return parseFloat(s);
+}
+function detectNumeric(cellText){
+  const v=sanitizeNumeric(cellText);
+  return !isNaN(v);
+}
+function comparatorFactory(idx, numeric){
+  return (a,b)=>{
+    const ta=a.children[idx].textContent;
+    const tb=b.children[idx].textContent;
+    if (numeric){
+      const na=sanitizeNumeric(ta), nb=sanitizeNumeric(tb);
+      return (na-nb);
+    }
+    return ta.localeCompare(tb, undefined, {numeric:true, sensitivity:'base'});
+  };
+}
+function parseFilterExp(exp){
+  if (!exp) return null;
+  const s=exp.trim();
+  const m=s.match(/^([<>]=?|=)\s*([0-9.]+)\s*%?$/);
+  if (m){
+    const op=m[1], val=parseFloat(m[2]);
+    return cell=>{
+      const n=sanitizeNumeric(cell.replace('%',''));
+      if (isNaN(n)) return false;
+      if (op==='>')  return n>val;
+      if (op==='>=') return n>=val;
+      if (op==='<')  return n<val;
+      if (op==='<=') return n<=val;
+      if (op==='=')  return n===val;
+      return false;
+    };
+  }
+  const needle=s.toLowerCase();
+  return cell=> cell.toLowerCase().includes(needle);
+}
+function applyFilters(table){
+  const tb=table.querySelector('tbody');
+  const rows=Array.from(tb.rows);
+  const filters=Array.from(table.querySelectorAll('thead tr.filters th input')).map(inp=>parseFilterExp(inp.value));
+  rows.forEach(tr=>{
+    const keep=filters.every((fn,idx)=>{ if(!fn) return true; const cell=tr.children[idx].textContent; return fn(cell); });
+    tr.style.display = keep ? '' : 'none';
+  });
+}
+function makeInteractive(tableId){
+  const table=document.getElementById(tableId);
+  const header=table.tHead.rows[0];
+  const filterInputs=table.querySelectorAll('thead tr.filters input');
+
+  let sortIdx=-1, dir=1;
+  Array.from(header.cells).forEach((th, idx)=>{
+    th.addEventListener('click', ()=>{
+      if (th.parentElement.classList.contains('filters')) return;
+      const tb=table.tBodies[0];
+      const rows=Array.from(tb.rows).filter(r=>r.style.display!=='none');
+      const sample=rows.find(Boolean); if (!sample) return;
+      const isNumeric=detectNumeric(sample.children[idx].textContent);
+
+      Array.from(header.cells).forEach(c=>c.classList.remove('sort-asc','sort-desc'));
+      if (sortIdx===idx) dir*=-1; else { sortIdx=idx; dir=1; }
+      const cmp=comparatorFactory(idx, isNumeric);
+      rows.sort((a,b)=> dir*cmp(a,b)); rows.forEach(r=>tb.appendChild(r));
+      th.classList.add(dir===1?'sort-asc':'sort-desc');
+    });
+  });
+
+  filterInputs.forEach(inp=> inp.addEventListener('input', ()=>applyFilters(table)) );
+}
+
+/* -------------------- IO + EVENTS -------------------- */
+function parseCSV(text){ return new Promise((resolve,reject)=>{ Papa.parse(text,{header:true,skipEmptyLines:true,complete:r=>resolve(r.data),error:reject}); }); }
+async function parseXLSX(file){ const buf=await file.arrayBuffer(); const wb=XLSX.read(buf); const ws=wb.Sheets[wb.SheetNames[0]]; return XLSX.utils.sheet_to_json(ws,{raw:false,defval:""}); }
+function headersOk(rows){ if (!rows.length) return false; const cols=Object.keys(rows[0]); return ["Impressions","Clicks","Spend","Sales","Orders","Units"].every(c=>cols.includes(c)); }
+
+document.getElementById('file').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return; let rows=[];
+  try{ if (/\.(xlsx)$/i.test(f.name)) rows=await parseXLSX(f); else rows=await parseCSV(await f.text()); }
+  catch(err){ alert("Failed to read file: "+err.message); return; }
+  if (!headersOk(rows)){ alert("Missing required columns. Please export the SP Search Term Report with standard headers."); return; }
+  document.getElementById('stamp').textContent="Last Updated: "+new Date().toISOString().slice(0,16).replace('T',' ');
+  buildTables(rows);
+});
+
+document.getElementById('demo').addEventListener('click', ()=>{
+  const stub = [{
+    "Keyword Text":"+crew +socks","Match Type":"broad","Impressions":1000,"Clicks":20,"Spend":9.8,"Sales":30,"Orders":3,"Units":3,
+    "Product Targeting Expression":"","Resolved Product Targeting Expression (Informational only)":"","Customer Search Term":"crew socks"
+  },{
+    "Keyword Text":"ankle socks","Match Type":"phrase","Impressions":500,"Clicks":12,"Spend":6,"Sales":20,"Orders":2,"Units":2,
+    "Product Targeting Expression":"","Resolved Product Targeting Expression (Informational only)":"","Customer Search Term":"ankle socks"
+  },{
+    "Keyword Text":"","Match Type":"","Impressions":800,"Clicks":16,"Spend":7,"Sales":10,"Orders":1,"Units":1,
+    "Product Targeting Expression":"close-match","Resolved Product Targeting Expression (Informational only)":"close-match","Customer Search Term":"men socks"
+  },{
+    "Keyword Text":"","Match Type":"expanded product targeting","Impressions":300,"Clicks":6,"Spend":5,"Sales":0,"Orders":0,"Units":0,
+    "Product Targeting Expression":"asin=B0ABCDEF12","Resolved Product Targeting Expression (Informational only)":"asin=B0ABCDEF12","Customer Search Term":"B0XYZ12345"
+  },{
+    "Keyword Text":"+black +socks","Match Type":"broad","Impressions":200,"Clicks":5,"Spend":4.2,"Sales":0,"Orders":0,"Units":0,
+    "Product Targeting Expression":"","Resolved Product Targeting Expression (Informational only)":"","Customer Search Term":"black socks"
+  }];
+  document.getElementById('stamp').textContent="Last Updated: "+new Date().toISOString().slice(0,16).replace('T',' ');
+  buildTables(stub);
+});
+
+/* -------------------- PDF EXPORT -------------------- */
+function exportPDF(){
+  const el = document.getElementById('reportRoot');
+  const now = new Date();
+  const pad = n=>String(n).padStart(2,'0');
+  const fname = `Search-Term-Report_${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}.pdf`;
+  const opt = {
+    margin:       [0.3, 0.3, 0.3, 0.3],
+    filename:     fname,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+    pagebreak:    { mode: ['css', 'legacy'] }
+  };
+  html2pdf().from(el).set(opt).save();
+}
+document.getElementById('btnPdf').addEventListener('click', exportPDF);
+document.getElementById('btnPdf2').addEventListener('click', exportPDF);
+</script>
+</body>
+</html>

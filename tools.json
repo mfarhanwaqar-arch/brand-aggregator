@@ -55,4 +55,18 @@
     ],
     "thumb": ""
   }
+  {
+  "slug": "search-term-analyser",
+  "name": "Search Term Analyser — Profit Improvement",
+  "desc": "Increase profit by eliminating bleeders, fixing zero-order search terms, and focusing spend on only high-converting targets. Includes an Aggressive CTR feature to maximize clicks and capture quality traffic.",
+  "status": "live",
+  "features": [
+    "Boost profit by focusing on winners",
+    "Start eliminating bleeders",
+    "Fix zero-order search terms",
+    "Spend only on high-converting targets",
+    "Aggressive CTR booster"
+  ],
+  "thumb": "",
+}
 ]

@@ -71,15 +71,15 @@
   },
   {
     "slug": "multi-report-search-term",
-    "name": "Periods Search Term Analyser — Profit Improvement",
-    "desc": "Custom Date Ranges - Increase profit by eliminating bleeders, fixing zero-order search terms, and focusing spend on only high-converting targets. Includes an Aggressive CTR feature to maximize clicks and capture quality traffic.",
+    "name": "Compare Multi Reports Search Term Analyser",
+    "desc": "Custom Date Ranges - Analyze performance at the portfolio level to identify trends in product traffic and sales behavior.",
     "status": "live",
     "features": [
-      "Boost profit by focusing on winners",
-      "Start eliminating bleeders",
+      "Track portfolio performance over time",
+      "Spot products with declining traffic",
       "Fix zero-order search terms",
-      "Spend only on high-converting targets",
-      "Aggressive CTR booster"
+      "Understand sales patterns and shifts",
+      "Make informed decisions based on real trends"
     ],
     "thumb": ""
   }

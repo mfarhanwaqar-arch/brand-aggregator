@@ -71,7 +71,7 @@
   },
   {
     "slug": "multi-report-search-term",
-    "name": "Compare Multi Reports Search Term Analyser",
+    "name": "Compare MOM Reports - Ads Efficiency",
     "desc": "Custom Date Ranges - Analyze performance at the portfolio level to identify trends in product traffic and sales behavior.",
     "status": "live",
     "features": [

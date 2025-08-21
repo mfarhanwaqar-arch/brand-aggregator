@@ -1,1 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Search Term Report Analysis — Multi-File Compare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {--bg:#0b0d10;--panel:#11151a;--accent:#4f66ff;--muted:#94a3b8;--text:#e5e7eb;--line:#1f2937;--radius:14px}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 'Inter',system-ui}
+    .wrap{max-width:1200px;margin:24px auto;padding:0 16px}
+    .card{background:var(--panel);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.5)}
+    h1{font-size:18px;margin:0 0 12px;font-weight:600}
+    button{background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+    input[type=file]{margin-bottom:12px}
+    .file-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+    .file-row input{padding:6px;border-radius:6px;border:1px solid var(--line);background:#000;color:var(--text);width:220px}
 
+    /* Summary header (buttons + KPI chips) */
+    .summary-title{font-size:22px;font-weight:700;line-height:1.35;margin:0 0 4px;color:var(--text)}
+    .summary-subtitle{font-size:16px;color:var(--muted);font-weight:400}
+    .summary-buttons{display:flex;gap:12px;margin:12px 0 10px;flex-wrap:wrap}
+    .summary-btn{background:var(--accent);color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:600}
+    .summary-btn:hover{filter:brightness(1.05)}
+    .summary-btn.outline{background:transparent;border:1px solid var(--accent);color:var(--text)}
+    .summary-btn.outline:hover{background:#0e141b}
+    .kpi{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+    .kpi .box{background:#0f1318;border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:140px}
+    .kpi small{color:var(--muted);display:block;margin-bottom:4px}
+    .kpi .val{font-weight:700}
+
+    /* Tables */
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border:1px solid var(--line);padding:6px;text-align:center;white-space:nowrap}
+    th{background:#1c1f25;user-select:none;cursor:pointer;position:sticky;top:0}
+    th.sort-asc::after{content:" ▲";font-size:10px;color:var(--muted)}
+    th.sort-desc::after{content:" ▼";font-size:10px;color:var(--muted)}
+    thead tr.filters th{background:#0f1318;position:sticky;top:36px}
+    thead input{width:100%;background:#0b0f14;border:1px solid #1d2631;border-radius:8px;padding:6px 8px;color:var(--text);font-size:12px}
+
+    /* Column toggle for compare tables */
+    .colbar{display:flex;align-items:center;gap:8px;margin:6px 0}
+    .colbtn{background:transparent;border:1px solid var(--line);color:var(--text);padding:6px 10px;border-radius:8px;cursor:pointer;font-weight:600}
+    .colpanel{display:none;background:#0f1318;border:1px solid var(--line);border-radius:10px;padding:8px;flex-wrap:wrap;gap:8px}
+    .colpanel.show{display:flex}
+    .colpanel label{display:inline-flex;align-items:center;gap:6px;background:#0b0f14;border:1px solid #1d2631;border-radius:999px;padding:6px 10px;font-size:12px}
+    td.col-hidden, th.col-hidden{display:none}
+
+    /* Multi-select Portfolio panel */
+    .portwrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
+    .badge{display:inline-block;background:#18212b;border:1px solid #223042;border-radius:999px;padding:2px 8px;color:#c6d0dc;font-size:12px}
+    .portbtn{background:transparent;border:1px solid var(--line);color:var(--text);padding:6px 10px;border-radius:8px;cursor:pointer;font-weight:600}
+    .portpanel{display:none;background:#0f1318;border:1px solid var(--line);border-radius:12px;padding:10px;max-height:260px;overflow:auto}
+    .portpanel.show{display:block}
+    .port-controls{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+    .port-search{background:#0b0f14;border:1px solid #1d2631;border-radius:8px;padding:6px 8px;color:var(--text);min-width:200px}
+    .port-row{display:flex;align-items:center;gap:8px;padding:2px 0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Search Term Report Analysis — Multi-File Compare</h1>
+      <input type="file" id="fileInput" multiple accept=".csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx" />
+      <button id="btnPdf">Download PDF</button>
+      <span id="lastUpdated">Last Updated: →</span>
+
+      <div id="periodInputs"></div>
+
+      <!-- Multi-select Portfolio UI -->
+      <div class="portwrap" id="portWrap" style="display:none">
+        <button type="button" class="portbtn" id="portToggle">
+          Portfolio: <span id="portBadge" class="badge">All</span>
+        </button>
+        <div id="portPanel" class="portpanel">
+          <div class="port-controls">
+            <button type="button" class="portbtn" id="portAll">Select all</button>
+            <button type="button" class="portbtn" id="portNone">Select none</button>
+            <input id="portSearch" class="port-search" placeholder="Search portfolio…" />
+          </div>
+          <div id="portList"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px">
+        <button id="buildBtn" style="display:none">Build Reports</button>
+      </div>
+    </div>
+
+    <div id="output"></div>
+  </div>
+
+<script>
+/* ---------------- DOM + State ---------------- */
+const $ = id => document.getElementById(id);
+const filesEl = $("fileInput"); const periodsEl = $("periodInputs");
+const buildBtn = $("buildBtn"); const output = $("output"); const stamp = $("lastUpdated");
+$("btnPdf").onclick = () => window.print();
+
+let FILES = [];
+let RAW_PERIODS = [];           // [{label, rows}]
+let ALL_PORTFOLIOS = [];        // ['P1', 'P2', ...]
+let SELECTED_PORTS = new Set(); // if empty => All
+const LS_PORTS = 'str:ports:selected';
+
+/* ---------------- Utils ---------------- */
+const num = v => { if (v==null) return 0; if (typeof v==='number') return v;
+  const s=(''+v).replace(/[, $%]/g,'').trim(); const n=parseFloat(s); return isNaN(n)?0:n; };
+const safeDiv = (n,d)=> d>0 ? n/d : 0;
+const pctFmt = v => isFinite(v) ? (v*100).toFixed(2)+'%' : '—';
+const money = v => num(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const guessLabel = name => (name.match(/(\d{4}[-_]\d{2}(?:[-_]\d{2})?)/)?.[1]
+                         || name.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-_ ]?\d{4}/i)?.[0]
+                         || name.match(/W\d{1,2}[_-]?\d{4}/i)?.[0]
+                         || name.replace(/\.[^.]+$/,''));
+
+/* ---------------- File Input ---------------- */
+filesEl.addEventListener('change', e=>{
+  FILES = Array.from(e.target.files||[]);
+  periodsEl.innerHTML = '';
+  FILES.forEach((f,i)=>{
+    const row = document.createElement('div');
+    row.className='file-row';
+    row.innerHTML = `<span>${f.name}</span><input id="period_${i}" value="${guessLabel(f.name)}">`;
+    periodsEl.appendChild(row);
+  });
+  buildBtn.style.display = FILES.length ? 'inline-block' : 'none';
+});
+
+/* ---------------- IO ---------------- */
+async function readFile(file){
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, {type:'array'}); // handles CSV/XLSX
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws, {raw:false, defval:""});
+}
+function headersOk(rows){
+  if (!rows.length) return false;
+  const cols=Object.keys(rows[0]);
+  return ["Impressions","Clicks","Spend","Sales","Orders","Units"].every(c=>cols.includes(c));
+}
+function getPortfolio(row){
+  const v = row["Portfolio Name (Informational only)"] ?? row["Portfolio Name"] ?? "";
+  const s = String(v).trim(); return s || "(Unassigned)";
+}
+function extractPortfolios(periods){
+  const s = new Set();
+  periods.forEach(p=>p.rows.forEach(r=>s.add(getPortfolio(r))));
+  return Array.from(s).sort((a,b)=>a.localeCompare(b));
+}
+
+/* ---------------- Metrics ---------------- */
+function acosTier(acos){
+  if(!isFinite(acos) || acos===0) return "No Sales";
+  if(acos<0.05) return "0%-5%";
+  if(acos<0.10) return "5%-10%";
+  if(acos<0.20) return "10%-20%";
+  if(acos<0.30) return "20%-30%";
+  if(acos<0.40) return "30%-40%";
+  if(acos<0.50) return "40%-50%";
+  return "50%+";
+}
+function cvrTier(orders, clicks){
+  if(orders===0 || clicks<=0) return "No Orders";
+  const p=(orders/clicks)*100;
+  if(p<5) return "0%-5%"; if(p<10) return "5%-10%"; if(p<20) return "10%-20%"; if(p<30) return "20%-30%";
+  if(p<40) return "30%-40%"; if(p<50) return "40%-50%"; return "50%+";
+}
+function classify(row){
+  const mt=(row["Match Type"]||"").toString().toLowerCase();
+  const kw=(row["Keyword Text"]||"").toString();
+  const pte=(row["Product Targeting Expression"]||"").toString().toLowerCase();
+  const rpte=(row["Resolved Product Targeting Expression (Informational only)"]||"").toString().toLowerCase();
+  const hay=[mt,pte,rpte].join(" | ");
+  const hasASIN=/\b(b0[a-z0-9]{8})\b/i.test(pte)||/\b(b0[a-z0-9]{8})\b/i.test(rpte)||/\basin\s*[:=]/i.test(pte)||/\basin\s*[:=]/i.test(rpte);
+  if (hay.includes("close match")) return "Auto Close";
+  if (hay.includes("loose match")) return "Loose";
+  if (hay.includes("substitute")) return "Substitute";
+  if (hay.includes("complement")) return "Complementary";
+  if (mt.includes("exact")) return "Exact";
+  if (mt.includes("phrase")) return "Phrase";
+  if (mt.includes("broad")){ if (/\+[\S]+/.test(kw)) return "Broad Mod"; return "Broad"; }
+  if (hay.includes("expanded product targeting")||hay.includes("expanded")) return "PT (ASIN) Expanded";
+  if (hasASIN) return "PT (ASIN)";
+  const looksCategory=/category|brand|price|rating|asincategorysameas|asinbrandequals/.test(hay);
+  if (looksCategory && !hasASIN) return "Category";
+  if (/\+[\S]+/.test(kw)) return "Broad Mod";
+  if (kw && !pte) return "Broad";
+  return "Unclassified";
+}
+function addAgg(map,key,vals){
+  if(!map.has(key)) map.set(key, {Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0,Units:0});
+  const a=map.get(key);
+  a.Impressions+=vals.Impressions; a.Clicks+=vals.Clicks; a.Spend+=vals.Spend;
+  a.Sales+=vals.Sales; a.Orders+=vals.Orders; a.Units+=vals.Units;
+}
+function computeMetrics(rows, allowedPortsSet){
+  const allowAll = !allowedPortsSet || allowedPortsSet.size===0;
+  const totals={Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0,Units:0};
+  const byTier=new Map(), byClass=new Map(), byCVR=new Map();
+  rows.forEach(r=>{
+    const port = getPortfolio(r);
+    if (!allowAll && !allowedPortsSet.has(port)) return;
+    const Impressions=num(r.Impressions), Clicks=num(r.Clicks), Spend=num(r.Spend),
+          Sales=num(r.Sales||r["14 Day Total Sales"]||0), Orders=num(r.Orders), Units=num(r.Units);
+    totals.Impressions+=Impressions; totals.Clicks+=Clicks; totals.Spend+=Spend;
+    totals.Sales+=Sales; totals.Orders+=Orders; totals.Units+=Units;
+    addAgg(byTier, acosTier(Sales>0?Spend/Sales:(Spend>0?Infinity:0)), {Impressions,Clicks,Spend,Sales,Orders,Units});
+    addAgg(byClass, classify(r), {Impressions,Clicks,Spend,Sales,Orders,Units});
+    addAgg(byCVR, cvrTier(Orders,Clicks), {Impressions,Clicks,Spend,Sales,Orders,Units});
+  });
+  return {totals, byTier, byClass, byCVR};
+}
+
+/* ---------------- Sort / Filter tables ---------------- */
+function sanitizeNumeric(text){ if (text==null) return NaN;
+  const s=String(text).replace(/[, $]/g,'').trim(); if (s.endsWith('%')) return parseFloat(s.slice(0,-1)); return parseFloat(s); }
+function detectNumeric(cellText){ return !isNaN(sanitizeNumeric(cellText)); }
+function comparatorFactory(idx, numeric){ return (a,b)=>{ const ta=a.children[idx].textContent, tb=b.children[idx].textContent;
+  return numeric ? sanitizeNumeric(ta)-sanitizeNumeric(tb) : ta.localeCompare(tb, undefined, {numeric:true, sensitivity:'base'});};}
+function parseFilterExp(exp){
+  if (!exp) return null; const s=exp.trim(); const m=s.match(/^([<>]=?|=)\s*([0-9.]+)\s*%?$/);
+  if (m){ const op=m[1], val=parseFloat(m[2]); return cell=>{ const n=sanitizeNumeric(cell.replace('%','')); if (isNaN(n)) return false;
+    if (op==='>')return n>val; if (op==='>=')return n>=val; if (op==='<')return n<val; if (op==='<=')return n<=val; if (op==='=')return n===val; return false; }; }
+  const needle=s.toLowerCase(); return cell=> cell.toLowerCase().includes(needle);
+}
+function applyFilters(table){
+  const tb=table.querySelector('tbody'); const rows=Array.from(tb.rows);
+  const filters=Array.from(table.querySelectorAll('thead tr.filters th input')).map(inp=>parseFilterExp(inp.value));
+  rows.forEach(tr=>{
+    const keep=filters.every((fn,idx)=>{ if(!fn) return true; const cell=tr.children[idx].textContent; return fn(cell); });
+    tr.style.display = keep ? '' : 'none';
+  });
+}
+function enhanceTable(table){
+  if (!table || table.dataset.enhanced) return;
+  const header=table.tHead.rows[0];
+  let sortIdx=-1, dir=1;
+  Array.from(header.cells).forEach((th, idx)=>{
+    th.addEventListener('click', ()=>{
+      if (th.parentElement.classList.contains('filters')) return;
+      const tb=table.tBodies[0]; const rows=Array.from(tb.rows).filter(r=>r.style.display!=='none');
+      const sample=rows.find(Boolean); if (!sample) return;
+      const isNumeric=detectNumeric(sample.children[idx].textContent);
+      Array.from(header.cells).forEach(c=>c.classList.remove('sort-asc','sort-desc'));
+      if (sortIdx===idx) dir*=-1; else { sortIdx=idx; dir=1; }
+      const cmp=comparatorFactory(idx, isNumeric); rows.sort((a,b)=> dir*cmp(a,b)); rows.forEach(r=>tb.appendChild(r));
+      th.classList.add(dir===1?'sort-asc':'sort-desc');
+    });
+  });
+  const ftr = table.tHead.insertRow(1); ftr.className='filters';
+  Array.from(header.cells).forEach(()=>{ const th=document.createElement('th'); th.innerHTML='<input placeholder="filter…">'; ftr.appendChild(th); });
+  Array.from(ftr.querySelectorAll('input')).forEach(inp=> inp.addEventListener('input', ()=>applyFilters(table)) );
+  table.dataset.enhanced='1';
+}
+
+/* ---------------- Compare tables (column toggle) ---------------- */
+function toggleColumn(table, index, show){
+  const apply = el => el.classList[show?'remove':'add']('col-hidden');
+  if (table.tHead) Array.from(table.tHead.rows).forEach(r=> r.cells[index] && apply(r.cells[index]));
+  Array.from(table.tBodies).forEach(tb=> Array.from(tb.rows).forEach(tr=> tr.cells[index] && apply(tr.cells[index])));
+}
+function setupColumnToggle(tableId, columns, storageKey){
+  const table = document.getElementById(tableId); if(!table) return;
+  const bar = document.createElement('div'); bar.className='colbar';
+  bar.innerHTML = `<button class="colbtn" type="button">Columns</button><div class="colpanel"></div>`;
+  table.parentElement.insertBefore(bar, table);
+  const btn = bar.querySelector('.colbtn'); const panel = bar.querySelector('.colpanel');
+  let state = {}; try{ state = JSON.parse(localStorage.getItem(storageKey)||'{}'); }catch(_){}
+  columns.forEach((c, idx)=>{
+    const id = `${tableId}_c_${idx}`; const lab=document.createElement('label');
+    lab.innerHTML = `<input type="checkbox" id="${id}" ${state[c.key]!==false?'checked':''}/> ${c.label}`; panel.appendChild(lab);
+    lab.querySelector('input').addEventListener('change', e=>{ const show=e.target.checked; state[c.key]=show; localStorage.setItem(storageKey, JSON.stringify(state)); toggleColumn(table, c.index, show); });
+  });
+  columns.forEach(c=> toggleColumn(table, c.index, state[c.key]!==false));
+  btn.addEventListener('click', ()=> panel.classList.toggle('show'));
+}
+
+/* ---------------- Renderers ---------------- */
+const tierOrder=["0%-5%","5%-10%","10%-20%","20%-30%","30%-40%","40%-50%","50%+","No Sales"];
+const classOrder=["Loose","Broad","Substitute","Auto Close","Phrase","Broad Mod","Category","PT (ASIN)","Complementary","Exact","PT (ASIN) Expanded","Unclassified"];
+const cvrOrder=["0%-5%","5%-10%","10%-20%","20%-30%","30%-40%","40%-50%","50%+","No Orders"];
+
+function tableFromMapBlock(title, order, map, tid){
+  let html = `<div class='card'><h3 style='margin:0 0 8px'>${title}</h3><div style='overflow:auto'><table id='${tid}'>`+
+    `<thead><tr><th>Bucket</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>Spend</th><th>Sales</th><th>Orders</th><th>CVR</th><th>ACOS</th><th>CPC</th></tr></thead><tbody>`;
+  const keys = order || Array.from(map.keys());
+  keys.forEach(k=>{
+    const a=map.get(k)||{Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0};
+    const CTR=a.Impressions>0? a.Clicks/a.Impressions:0;
+    const CVR=a.Clicks>0? a.Orders/a.Clicks:0;
+    const ACOS=a.Sales>0? a.Spend/a.Sales: (a.Spend>0? Infinity:0);
+    const CPC=a.Clicks>0? a.Spend/a.Clicks:0;
+    html+=`<tr><td>${k}</td><td>${a.Impressions.toLocaleString()}</td><td>${a.Clicks.toLocaleString()}</td><td>${pctFmt(CTR)}</td><td>$${money(a.Spend)}</td><td>$${money(a.Sales)}</td><td>${a.Orders.toLocaleString()}</td><td>${pctFmt(CVR)}</td><td>${isFinite(ACOS)?pctFmt(ACOS):'—'}</td><td>$${money(CPC)}</td></tr>`;
+  });
+  html+='</tbody></table></div></div>';
+  setTimeout(()=> enhanceTable(document.getElementById(tid)), 0);
+  return html;
+}
+
+function renderReport(label, metrics, idx){
+  const t=metrics.totals;
+  const CTR=t.Impressions>0?t.Clicks/t.Impressions:0;
+  const CVR=t.Clicks>0?t.Orders/t.Clicks:0;
+  const ACOS=t.Sales>0?t.Spend/t.Sales:(t.Spend>0?Infinity:0);
+
+  let html = `<div class='card'>
+    <h2 class="summary-title">Profit Improvement via Bulk File Report</h2>
+    <div class="summary-subtitle">Keep Spending on Highest Conversion Spots — <b>${label}</b></div>
+    <div class="summary-buttons">
+      <a class="summary-btn" target="_blank" rel="noopener" href="https://calendly.com/m-farhanwaqar/30min">Book a Call</a>
+      <a class="summary-btn" target="_blank" rel="noopener" href="https://amethyst-asphalt-48e.notion.site/Portfolio-2412355cb7a38063936bc3c9e28cb0b9">Ranking Case Study</a>
+      <a class="summary-btn outline" href="javascript:void(0)" onclick="window.print()">Download PDF</a>
+    </div>
+    <div class="kpi">
+      <div class="box"><small>Total Impr.</small><div class="val">${t.Impressions.toLocaleString()}</div></div>
+      <div class="box"><small>Total Clicks</small><div class="val">${t.Clicks.toLocaleString()}</div></div>
+      <div class="box"><small>Total Spend</small><div class="val">$${money(t.Spend)}</div></div>
+      <div class="box"><small>Total Sales</small><div class="val">$${money(t.Sales)}</div></div>
+      <div class="box"><small>CTR</small><div class="val">${pctFmt(CTR)}</div></div>
+      <div class="box"><small>Conversion Rate</small><div class="val">${pctFmt(CVR)}</div></div>
+      <div class="box"><small>ACOS</small><div class="val">${isFinite(ACOS)?pctFmt(ACOS):'—'}</div></div>
+    </div>
+  </div>`;
+
+  html += tableFromMapBlock('ACOS Tier', tierOrder, metrics.byTier, `tbl_${idx}_acos`);
+  html += tableFromMapBlock('Classification', classOrder, metrics.byClass, `tbl_${idx}_class`);
+  html += tableFromMapBlock('CVR Tier', cvrOrder, metrics.byCVR, `tbl_${idx}_cvr`);
+
+  return html;
+}
+
+function compareTableBlock(title, order, mapA, mapB, tableId){
+  const cols = [
+    {key:'bucket',  label:'Bucket'},
+    {key:'aSpend',  label:'A Spend'},
+    {key:'bSpend',  label:'B Spend'},
+    {key:'dSpend',  label:'Δ Spend'},
+    {key:'dpSpend', label:'Δ Spend %'},
+    {key:'aSales',  label:'A Sales'},
+    {key:'bSales',  label:'B Sales'},
+    {key:'dSales',  label:'Δ Sales'},
+    {key:'dpSales', label:'Δ Sales %'},
+    {key:'aAcos',   label:'A ACOS'},
+    {key:'bAcos',   label:'B ACOS'},
+    {key:'dAcos',   label:'Δ ACOS'},
+    {key:'aClicks', label:'A Clicks'},
+    {key:'bClicks', label:'B Clicks'},
+    {key:'dClicks', label:'Δ Clicks'},
+    {key:'dpClicks',label:'Δ Clicks %'},
+    {key:'aCpc',    label:'A CPC'},
+    {key:'bCpc',    label:'B CPC'},
+    {key:'dCpc',    label:'Δ CPC'},
+    {key:'aCtr',    label:'A CTR'},
+    {key:'bCtr',    label:'B CTR'},
+    {key:'dCtr',    label:'Δ CTR'},
+    {key:'aCvr',    label:'A CVR'},
+    {key:'bCvr',    label:'B CVR'},
+    {key:'dCvr',    label:'Δ CVR'},
+    {key:'aOrders', label:'A Orders'},
+    {key:'bOrders', label:'B Orders'},
+    {key:'dOrders', label:'Δ Orders'},
+  ];
+  const head1 = '<tr>'+cols.map(c=>`<th>${c.label}</th>`).join('')+'</tr>';
+  const head2 = '<tr class="filters">'+cols.map(()=>'<th><input placeholder="filter…"></th>').join('')+'</tr>';
+
+  const keys = Array.from(new Set([...(order||[]), ...mapA.keys(), ...mapB.keys()]));
+  let rows='';
+  keys.forEach(k=>{
+    const A=mapA.get(k)||{Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0};
+    const B=mapB.get(k)||{Impressions:0,Clicks:0,Spend:0,Sales:0,Orders:0};
+    const aACOS = (A.Sales>0)? A.Spend/A.Sales : (A.Spend>0?Infinity:0);
+    const bACOS = (B.Sales>0)? B.Spend/B.Sales : (B.Spend>0?Infinity:0);
+    const aCPC  = safeDiv(A.Spend, A.Clicks);
+    const bCPC  = safeDiv(B.Spend, B.Clicks);
+    const aCTR  = safeDiv(A.Clicks, A.Impressions);
+    const bCTR  = safeDiv(B.Clicks, B.Impressions);
+    const aCVR  = safeDiv(A.Orders, A.Clicks);
+    const bCVR  = safeDiv(B.Orders, B.Clicks);
+
+    const dSpend=B.Spend-A.Spend, dpSpend=safeDiv(dSpend,A.Spend);
+    const dSales=B.Sales-A.Sales, dpSales=safeDiv(dSales,A.Sales);
+    const dClicks=B.Clicks-A.Clicks, dpClicks=safeDiv(dClicks,A.Clicks);
+    const dAcos=(isFinite(aACOS)&&isFinite(bACOS))?(bACOS-aACOS):NaN;
+    const dCpc=bCPC-aCPC, dCtr=bCTR-aCTR, dCvr=bCVR-aCVR, dOrders=B.Orders-A.Orders;
+    const G = v => v>=0 ? 'style="color:#34d399"' : 'style="color:#f87171"';
+    rows += `<tr>
+      <td>${k}</td>
+      <td>$${money(A.Spend)}</td><td>$${money(B.Spend)}</td><td ${G(dSpend)}>$${money(dSpend)}</td><td ${G(dSpend)}>${pctFmt(dpSpend)}</td>
+      <td>$${money(A.Sales)}</td><td>$${money(B.Sales)}</td><td ${G(dSales)}>$${money(dSales)}</td><td ${G(dSales)}>${pctFmt(dpSales)}</td>
+      <td>${isFinite(aACOS)?pctFmt(aACOS):'—'}</td><td>${isFinite(bACOS)?pctFmt(bACOS):'—'}</td><td ${isNaN(dAcos)?'':G(-dAcos)}>${isNaN(dAcos)?'—':pctFmt(dAcos)}</td>
+      <td>${A.Clicks.toLocaleString()}</td><td>${B.Clicks.toLocaleString()}</td><td ${G(dClicks)}>${dClicks.toLocaleString()}</td><td ${G(dClicks)}>${pctFmt(dpClicks)}</td>
+      <td>$${money(aCPC)}</td><td>$${money(bCPC)}</td><td ${G(-dCpc)}>$${money(dCpc)}</td>
+      <td>${pctFmt(aCTR)}</td><td>${pctFmt(bCTR)}</td><td ${G(dCtr)}>${pctFmt(dCtr)}</td>
+      <td>${pctFmt(aCVR)}</td><td>${pctFmt(bCVR)}</td><td ${G(dCvr)}>${pctFmt(dCvr)}</td>
+      <td>${A.Orders.toLocaleString()}</td><td>${B.Orders.toLocaleString()}</td><td ${G(dOrders)}>${dOrders.toLocaleString()}</td>
+    </tr>`;
+  });
+
+  const html = `<div class="card"><h3 style="margin:0 0 8px">${title}</h3>
+    <div style="overflow:auto">
+      <table id="${tableId}">
+        <thead>${head1}${head2}</thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+  setTimeout(()=>{
+    const table = document.getElementById(tableId); if(!table) return;
+    const cols = Array.from(table.tHead.rows[0].cells).map((th,i)=>({key:i,label:th.textContent,index:i}));
+    setupColumnToggle(tableId, cols, 'cols:'+tableId);
+    enhanceTable(table);
+  },0);
+  return html;
+}
+function renderCompare(PA, PB){
+  const a=PA.data.totals, b=PB.data.totals;
+  const card = (title,av,bv,fmt)=>{ const d=bv-av, dp=(av===0?(bv===0?0:Infinity):(bv-av)/av);
+    const cls=d>=0?'style="color:#34d399"':'style="color:#f87171"'; const sign=d>=0?'+':'';
+    return `<div class='card'><strong>${title}:</strong> ${fmt(av)} → ${fmt(bv)} <span ${cls}>(${sign}${fmt(d)} / ${isFinite(dp)?(dp*100).toFixed(2)+'%':'—'})</span></div>`; };
+  let html = `<div class='card'><h2 style='margin:0 0 8px'>Compare: ${PA.label} → ${PB.label}</h2>`+
+    card('Impressions', a.Impressions, b.Impressions, v=>v.toLocaleString())+
+    card('Clicks', a.Clicks, b.Clicks, v=>v.toLocaleString())+
+    card('Spend', a.Spend, b.Spend, v=>'$'+money(v))+
+    card('Sales', a.Sales, b.Sales, v=>'$'+money(v))+
+    card('Orders', a.Orders, b.Orders, v=>v.toLocaleString())+`</div>`;
+  html += compareTableBlock('ACOS Tier — Compare', tierOrder, PA.data.byTier, PB.data.byTier, 'cmp_acos');
+  html += compareTableBlock('Classification — Compare', classOrder, PA.data.byClass, PB.data.byClass, 'cmp_class');
+  return html;
+}
+
+/* ---------------- Portfolio UI ---------------- */
+function renderPortfolioUI(){
+  if (!ALL_PORTFOLIOS.length){ $("portWrap").style.display='none'; return; }
+  $("portWrap").style.display='flex';
+  const panel = $("portPanel"); const badge = $("portBadge");
+  const list = $("portList"); const search = $("portSearch");
+  const btnAll = $("portAll"); const btnNone = $("portNone");
+  $("portToggle").onclick = ()=> panel.classList.toggle('show');
+
+  list.innerHTML = '';
+  ALL_PORTFOLIOS.forEach(name=>{
+    const id = 'pf_'+btoa(name).replace(/=/g,'');
+    const row = document.createElement('label');
+    row.className = 'port-row';
+    row.innerHTML = `<input type="checkbox" id="${id}" ${SELECTED_PORTS.size===0 || SELECTED_PORTS.has(name)?'checked':''}/> ${name}`;
+    list.appendChild(row);
+  });
+
+  function updateBadge(){
+    if (SELECTED_PORTS.size===0 || SELECTED_PORTS.size===ALL_PORTFOLIOS.length) badge.textContent='All';
+    else badge.textContent = SELECTED_PORTS.size + ' selected';
+  }
+  function saveAndRender(){
+    localStorage.setItem(LS_PORTS, JSON.stringify(Array.from(SELECTED_PORTS)));
+    updateBadge(); renderAll();
+  }
+
+  Array.from(list.querySelectorAll('input')).forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const name = cb.parentElement.textContent.trim();
+      if (cb.checked) SELECTED_PORTS.add(name); else SELECTED_PORTS.delete(name);
+      // If none selected, treat as 0 (show nothing)—you can switch to "all when none" by uncommenting next line
+      // if (SELECTED_PORTS.size===0) SELECTED_PORTS = new Set(ALL_PORTFOLIOS);
+      saveAndRender();
+    });
+  });
+
+  btnAll.onclick = ()=>{ SELECTED_PORTS = new Set(ALL_PORTFOLIOS); Array.from(list.querySelectorAll('input')).forEach(cb=>cb.checked=true); saveAndRender(); };
+  btnNone.onclick = ()=>{ SELECTED_PORTS = new Set(); Array.from(list.querySelectorAll('input')).forEach(cb=>cb.checked=false); saveAndRender(); };
+
+  search.addEventListener('input', ()=>{
+    const q=search.value.toLowerCase();
+    Array.from(list.children).forEach(li=>{
+      const name = li.textContent.toLowerCase();
+      li.style.display = name.includes(q)?'':'none';
+    });
+  });
+
+  // Restore saved selection
+  try{
+    const saved = JSON.parse(localStorage.getItem(LS_PORTS)||'[]');
+    if (saved.length){
+      SELECTED_PORTS = new Set(saved.filter(n=>ALL_PORTFOLIOS.includes(n)));
+      Array.from(list.querySelectorAll('input')).forEach(cb=>{
+        const name = cb.parentElement.textContent.trim();
+        cb.checked = SELECTED_PORTS.size===0 || SELECTED_PORTS.has(name);
+      });
+    } else {
+      // default = All selected
+      SELECTED_PORTS = new Set(ALL_PORTFOLIOS);
+      Array.from(list.querySelectorAll('input')).forEach(cb=>cb.checked=true);
+    }
+  }catch(_){}
+  updateBadge();
+}
+
+/* ---------------- Build flow ---------------- */
+buildBtn.addEventListener('click', async ()=>{
+  if (!FILES.length){ alert("Choose at least one file."); return; }
+  RAW_PERIODS = [];
+  for (let i=0;i<FILES.length;i++){
+    const rows = await readFile(FILES[i]);
+    if(!headersOk(rows)){ alert(`Missing required columns in ${FILES[i].name}`); return; }
+    RAW_PERIODS.push({label: $("period_"+i).value || `P${i+1}`, rows});
+  }
+  ALL_PORTFOLIOS = extractPortfolios(RAW_PERIODS);
+  renderPortfolioUI();
+  renderAll();
+  stamp.textContent = "Last Updated: " + new Date().toISOString().slice(0,16).replace("T"," ");
+});
+
+function renderAll(){
+  output.innerHTML = '';
+  const periods = RAW_PERIODS.map(p => ({ label: p.label, data: computeMetrics(p.rows, SELECTED_PORTS) }));
+  if (periods.length>=2) output.insertAdjacentHTML('beforeend', renderCompare(periods[0], periods[1]));
+  periods.forEach((p,i)=> output.insertAdjacentHTML('beforeend', renderReport(p.label, p.data, i)));
+}
+</script>
+</body>
+</html>

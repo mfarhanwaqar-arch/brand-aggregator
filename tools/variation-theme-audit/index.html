@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Variation Theme • Affected SKUs Finder</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --bg:#0b0d10;--panel:#11151a;--accent:#4f66ff;--muted:#9aa4b2;--text:#e5e7eb;--line:#1f2937;--radius:14px;
+  --good:#0e7a3e; --good-bg:#0a1a14;
+  --warn:#b88700; --warn-bg:#1a1708;
+  --bad:#c0392b;  --bad-bg:#1a0f0e;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 'Inter',system-ui}
+.wrap{max-width:1100px;margin:28px auto;padding:0 20px}
+h1{font-size:24px;margin:0 0 12px}
+.section{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 16px;margin:14px 0}
+.section h2{font-size:18px;margin:0 0 12px}
+label{display:block;font-weight:600;margin:10px 0 6px}
+input[type="file"],input[type="text"],select{
+  width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0f1318;color:var(--text)
+}
+.help{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+button{
+  background:var(--accent);color:white;border:none;border-radius:12px;
+  padding:12px 16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.tableWrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#0e1217}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:#0f1724}
+.badge{display:inline-block;background:#0f1724;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px}
+.note{padding:10px;border:1px dashed var(--line);border-radius:10px;background:#0c1117}
+footer{color:var(--muted);font-size:12px;margin:20px 0}
+.small{font-size:12px;color:var(--muted)}
+
+/* Big summary banner */
+.summaryBanner{
+  display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+  border:1px solid var(--line);background:#0c1219;border-radius:14px;padding:14px 16px;margin-bottom:12px
+}
+.stat{
+  display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#0f1724;min-width:180px
+}
+.statLabel{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.statBig{font-size:26px;font-weight:800}
+.statPct.good{color:var(--good);background:var(--good-bg)}
+.statPct.warn{color:var(--warn);background:var(--warn-bg)}
+.statPct.bad{color:var(--bad);background:var(--bad-bg)}
+.statPct{padding:10px 14px;border-radius:12px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Analyze Variation Themes & Find Affected SKUs</h1>
+
+  <div class="section">
+    <h2>📘 Instructions</h2>
+    <p>
+      This tool compares your <b>Category Listing Report (CLR)</b> against the <b>Variation Theme file</b> from Amazon.
+      It flags SKUs whose <b>Product Type</b> and <b>Variation Theme Name</b> pair matches an allowed combination in the Variation Theme file.
+    </p>
+    <ul>
+      <li>Upload the <b>Variation Theme</b> file and your <b>CLR</b>.</li>
+      <li>Enter CLR column letters for <b>SKU</b>, <b>Product Type</b>, and <b>Variation Theme Name</b>.</li>
+      <li>Select which <b>“Variation Theme”</b> header to use from the Variation Theme file (English or a locale variant).</li>
+      <li>Click <b>Analyze</b> to see affected SKUs and download a CSV.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>1) Upload Your Files</h2>
+    <div class="grid">
+      <div>
+        <label>Variation Theme File (.xlsx / .xlsm)</label>
+        <input id="vtFile" type="file" accept=".xlsx,.xlsm" />
+      </div>
+      <div>
+        <label>Category Listing Report — CLR (.xlsx / .xlsm)</label>
+        <input id="clrFile" type="file" accept=".xlsx,.xlsm" />
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>2) Specify Your Column Layout</h2>
+    <div class="note small">Enter Excel <b>letters</b> (e.g., C, E, QL). Sheet name is optional — leave blank to use the first sheet.</div>
+    <div class="grid">
+      <div><label>CLR — SKU Column</label><input id="clrSkuCol" type="text" value="C" /></div>
+      <div><label>CLR — Product Type Column</label><input id="clrPtCol" type="text" value="E" /></div>
+    </div>
+    <div class="grid" style="margin-top:10px">
+      <div><label>CLR — Variation Theme Name Column</label><input id="clrVtnCol" type="text" value="QL" /></div>
+      <div><label>CLR — Sheet Name (optional)</label><input id="clrSheetName" type="text" value="Template" /></div>
+    </div>
+    <hr />
+    <div class="grid">
+      <div><label>Variation Theme File — Sheet Name (optional)</label><input id="vtSheetName" type="text" /></div>
+      <div><label>Variation Theme File — “Variation Theme” Header</label><select id="vtHeaderSelect"><option>(Upload file first)</option></select></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>3) Run</h2>
+    <button id="analyzeBtn" disabled>🔎 Analyze Files & Find Affected SKUs</button>
+    <span id="status" class="badge" style="margin-left:10px">Waiting for files…</span>
+  </div>
+
+  <div id="results" class="section" style="display:none">
+    <h2>Results</h2>
+
+    <!-- Big colorful banner -->
+    <div id="banner" class="summaryBanner" style="display:none">
+      <div class="stat">
+        <div class="statLabel">SKUs Analyzed</div>
+        <div id="statTotal" class="statBig">0</div>
+      </div>
+      <div class="stat">
+        <div class="statLabel">Affected SKUs (Matched)</div>
+        <div id="statAffected" class="statBig">0</div>
+      </div>
+      <div id="pctBox" class="stat statPct">
+        <div class="statLabel">% Affected</div>
+        <div id="statPct" class="statBig">0%</div>
+      </div>
+    </div>
+
+    <div id="summary" class="help" style="margin-bottom:10px"></div>
+
+    <div class="tableWrap">
+      <table id="resultTable">
+        <thead>
+          <tr><th>#</th><th>SKU</th><th>Product Type</th><th>Variation Theme Name</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button id="downloadCsvBtn">⬇️ Download CSV</button>
+      <span id="counts" class="badge"></span>
+    </div>
+  </div>
+
+  <footer>
+    Matching logic: a SKU is “affected” if its <b>Product Type</b> (CLR) equals column <b>B</b> of the Variation Theme file and its
+    <b>Variation Theme Name</b> (CLR) equals the chosen <b>Variation Theme</b> column (usually column C).
+  </footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const norm = v => (v==null? "": String(v).trim()).toUpperCase();
+
+/* Column letters (e.g., QL) -> zero-based index */
+function colLetterToIndex(letter){
+  letter = String(letter||"").trim().toUpperCase();
+  let idx = 0;
+  for(let i=0;i<letter.length;i++){ idx = idx*26 + (letter.charCodeAt(i)-64); }
+  return idx-1;
+}
+
+/* Read workbook -> rows AOA */
+async function readWorkbook(file, preferred=""){
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data, {type:'array', cellDates:false});
+  const sheet = preferred && wb.Sheets[preferred] ? preferred : wb.SheetNames[0];
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheet], {header:1, raw:false, defval:""});
+  return {rows, sheetNameUsed: sheet};
+}
+
+/* Build allowed pair set from Variation Theme file */
+function buildVariationKeySet(vtRows, vtHeaderToUse){
+  if(!vtRows.length) return new Set();
+  const headerRow = vtRows[0].map(h=>String(h||""));
+  const idxPT = 1; // Column B
+  let idxVT = headerRow.findIndex(h => norm(h)===norm(vtHeaderToUse));
+  if(idxVT<0){ // fallback to first header containing "Variation Theme" or column C
+    idxVT = headerRow.findIndex(h => /variation\s*theme/i.test(h));
+    if(idxVT<0) idxVT = 2;
+  }
+  const set = new Set();
+  for(let r=1;r<vtRows.length;r++){
+    const pt = norm(vtRows[r][idxPT]);
+    const vt = norm(vtRows[r][idxVT]);
+    if(pt && vt) set.add(pt+"|"+vt);
+  }
+  return set;
+}
+
+/* Scan CLR */
+function findAffectedSkus(clrRows, skuL, ptL, vtnL, keySet){
+  const idxSKU = colLetterToIndex(skuL);
+  const idxPT  = colLetterToIndex(ptL);
+  const idxVTN = colLetterToIndex(vtnL);
+  const out = [];
+  for(let r=1;r<clrRows.length;r++){
+    const row = clrRows[r]||[];
+    const sku = String(row[idxSKU]||"").trim();
+    const pt  = norm(row[idxPT]);
+    const vtn = norm(row[idxVTN]);
+    if(!sku || !pt || !vtn) continue;
+    if(keySet.has(pt+"|"+vtn)) out.push({sku, pt: row[idxPT], vtn: row[idxVTN]});
+  }
+  return {affected: out, total: Math.max(0, clrRows.length-1)};
+}
+
+/* Render helpers */
+function renderTable(rows){
+  const tb = $("#resultTable tbody"); tb.innerHTML = "";
+  rows.forEach((r,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${i+1}</td><td>${escape(r.sku)}</td><td>${escape(r.pt)}</td><td>${escape(r.vtn)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function escape(s){return String(s).replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[m]));}
+function downloadCSV(rows, fn="affected_skus.csv"){
+  const header = ["SKU","Product Type","Variation Theme Name"];
+  const lines = [header.join(",")].concat(rows.map(r=>[r.sku,r.pt,r.vtn].map(v=>{
+    const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;
+  }).join(",")));
+  const url = URL.createObjectURL(new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8;"}));
+  const a = document.createElement("a"); a.href=url; a.download=fn; a.click(); URL.revokeObjectURL(url);
+}
+
+/* UI state */
+let vtCache=null, vtLoaded=false, clrLoaded=false;
+function updateReady(){
+  const ready = vtLoaded && clrLoaded;
+  $("#analyzeBtn").disabled = !ready;
+  $("#status").textContent = ready ? "Ready to analyze" : "Waiting for files…";
+}
+
+/* Handlers */
+$("#vtFile").addEventListener("change", async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const {rows} = await readWorkbook(f, $("#vtSheetName").value.trim());
+  vtCache = {rows};
+  const headers = rows[0] ? rows[0].filter(h=>/variation\s*theme/i.test(String(h))) : [];
+  const sel = $("#vtHeaderSelect"); sel.innerHTML = "";
+  if(headers.length===0){ const o=document.createElement("option"); o.textContent="(No 'Variation Theme' headers found — will fallback to column C)"; o.value=""; sel.appendChild(o); }
+  else headers.forEach(h=>{ const o=document.createElement("option"); o.value=h; o.textContent=h; sel.appendChild(o); });
+  vtLoaded = true; updateReady();
+});
+$("#clrFile").addEventListener("change", e=>{ clrLoaded = !!e.target.files[0]; updateReady(); });
+
+$("#analyzeBtn").addEventListener("click", async ()=>{
+  const clrFile = $("#clrFile").files[0];
+  const {rows: clrRows, sheetNameUsed} = await readWorkbook(clrFile, $("#clrSheetName").value.trim());
+  const headerChosen = $("#vtHeaderSelect").value.trim();
+  const keySet = buildVariationKeySet(vtCache.rows, headerChosen);
+  const {affected, total} = findAffectedSkus(
+    clrRows,
+    $("#clrSkuCol").value.trim(),
+    $("#clrPtCol").value.trim(),
+    $("#clrVtnCol").value.trim(),
+    keySet
+  );
+  renderTable(affected);
+  $("#results").style.display = "block";
+  $("#counts").textContent = `${affected.length} affected`;
+  $("#summary").innerHTML = `<span class="badge">CLR Sheet: ${escape(sheetNameUsed)}</span> <span class="badge">VT Header: ${escape(headerChosen || "Column C (fallback)")}</span>`;
+
+  // Big banner numbers + colored percentage
+  const pct = total ? (affected.length / total) * 100 : 0;
+  $("#statTotal").textContent    = total.toLocaleString();
+  $("#statAffected").textContent = affected.length.toLocaleString();
+  $("#statPct").textContent      = `${pct.toFixed(1)}%`;
+
+  const pctBox = $("#pctBox");
+  pctBox.classList.remove("good","warn","bad");
+  if (pct >= 50) { pctBox.classList.add("bad");  pctBox.classList.add("statPct","bad"); }
+  else if (pct >= 20) { pctBox.classList.add("warn"); pctBox.classList.add("statPct","warn"); }
+  else { pctBox.classList.add("good"); pctBox.classList.add("statPct","good"); }
+
+  $("#banner").style.display = "flex";
+
+  $("#downloadCsvBtn").onclick = ()=>downloadCSV(affected);
+});
+</script>
+</body>
+</html>

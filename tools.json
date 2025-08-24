@@ -82,5 +82,20 @@
       "Make informed decisions based on real trends"
     ],
     "thumb": ""
+  },
+  {
+    "slug": "variation-theme-audit",
+    "name": "Variation Theme — Affected SKUs Finder",
+    "desc": "Upload the Variation Theme file and your CLR, map columns, and instantly find SKUs whose Product Type + Variation Theme Name pair matches Amazon’s allowed combinations. Export results to CSV.",
+    "tags": ["Amazon", "Catalog", "Listing", "Variation Theme", "CLR"],
+    "status": "live",
+    "features": [
+      "Auto-detect 'Variation Theme' headers across locales",
+      "Flexible CLR column mapping (SKU, Product Type, Variation Theme Name)",
+      "Fast matching of Product Type vs. Variation Theme",
+      "Big colored summary: total SKUs, affected SKUs, % affected",
+      "Download affected SKUs as CSV"
+    ],
+    "thumb": ""
   }
 ]

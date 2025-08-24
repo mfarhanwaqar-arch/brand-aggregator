@@ -1,0 +1,6 @@
+deployment:
+  tasks:
+    - export WEBROOT=/home/adsaccel/public_html
+    - /bin/mkdir -p $WEBROOT/tools
+    - /usr/bin/rsync -a --ignore-existing --exclude='.git' tools/ $WEBROOT/tools/
+    - /usr/bin/rsync -a tools.json $WEBROOT/

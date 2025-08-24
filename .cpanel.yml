@@ -1,6 +1,16 @@
+---
 deployment:
   tasks:
+    # Set webroot path
     - export WEBROOT=/home/adsaccel/public_html
+
+    # Ensure tools folder exists
     - /bin/mkdir -p $WEBROOT/tools
-    - /usr/bin/rsync -a --ignore-existing --exclude='.git' tools/ $WEBROOT/tools/
-    - /usr/bin/rsync -a tools.json $WEBROOT/
+
+    # Sync tools folder from repo to public_html/tools
+    # --exclude='.git' to ignore Git metadata
+    # Existing folders/files will be updated automatically
+    - /usr/bin/rsync -a --exclude='.git' tools/ $WEBROOT/tools/
+
+    # Sync tools.json to public_html root
+    - /usr/bin/rsync -a tools.json $WEBROOT/

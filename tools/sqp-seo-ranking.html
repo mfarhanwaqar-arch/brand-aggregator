@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Improve Ranking with Search Query Performance</title>
+
+  <!-- Styles -->
+  <style>
+    /* A4-like centered page */
+    body{
+      background:#0d1117; color:#e6edf3; font-family:Arial, Helvetica, sans-serif;
+      margin:0; display:flex; justify-content:center;
+    }
+    #pageWrap{ width:100%; max-width:900px; margin:0 auto; padding:20px 30px; }
+
+    .wrap{ display:grid; grid-template-columns:360px 1fr; gap:20px; padding:22px 0; }
+    @media (max-width: 980px){ .wrap{ grid-template-columns:1fr; } }
+
+    .card{ background:#161b22; border:1px solid #30363d; border-radius:12px; padding:16px; }
+    h1{ font-size:30px; margin:0 0 6px; color:#fff; font-weight:bold; }
+    h2{ font-size:20px; margin:10px 0; color:#58a6ff; font-weight:bold; }
+    h3{ font-size:16px; margin:0 0 16px; color:#ffb347; font-weight:bold; }
+
+    .instruction{ margin:20px 0; border:1px solid #ff9800; border-radius:10px; padding:20px; }
+    .instruction-columns{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media (max-width: 700px){ .instruction-columns{ grid-template-columns:1fr; } }
+    .instruction h2{ color:#ffb347; font-size:20px; margin-bottom:10px; display:flex; align-items:center; }
+    .instruction p, .instruction li{ font-size:14px; line-height:1.6; }
+
+    .strength-row{ display:flex; gap:10px; margin-bottom:12px; }
+    .strength-box{ flex:1; font-size:16px; padding:10px; border-radius:8px; text-align:center; font-weight:bold; }
+    .strength-good{ background:#2ea04355; color:#3fb950; }
+    .strength-mid{ background:#f5a62355; color:#f0ad4e; }
+    .strength-low{ background:#da363333; color:#f85149; }
+
+    label{ display:block; font-size:13px; margin:8px 0 4px; color:#8b949e; }
+    input, textarea{ width:100%; background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:8px; color:#e6edf3; }
+    textarea{ min-height:100px; }
+
+    .btn{ background:#21262d; border:1px solid #30363d; border-radius:6px; padding:8px 12px; margin:6px 4px 0 0; cursor:pointer; color:#c9d1d9; font-weight:bold; }
+    .btn.primary{ background:#238636; border:0; color:#fff; }
+    .btn.warn{ background:#f0883e; color:#000; }
+
+    table{ width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+    th, td{ border-bottom:1px solid #30363d; padding:6px; text-align:left; }
+    th{ color:#58a6ff; font-size:13px; position:relative; cursor:pointer; user-select:none; }
+    .arrow{ margin-left:4px; font-size:10px; }
+    .selectBox{ cursor:pointer; }
+    .highlight-exact{ background:#2ea04355; color:#3fb950; font-weight:bold; padding:2px 6px; border-radius:4px; }
+    .highlight-broad{ background:#1f6feb55; color:#58a6ff; font-weight:bold; padding:2px 6px; border-radius:4px; }
+
+    .toast{ position:fixed; right:16px; bottom:16px; background:#161b22; border:1px solid #30363d; padding:10px 12px; border-radius:6px; display:none; }
+
+    /* Tooltips */
+    .tooltip{ position:relative; display:inline-block; cursor:help; color:#aaa; margin-left:4px; }
+    .tooltip .tooltiptext{
+      visibility:hidden; width:240px; background:#161b22; color:#e6edf3; text-align:left;
+      border-radius:6px; border:1px solid #30363d; padding:8px; font-size:12px; position:absolute; z-index:10;
+      bottom:125%; left:50%; margin-left:-120px; opacity:0; transition:opacity 0.3s;
+    }
+    .tooltip:hover .tooltiptext{ visibility:visible; opacity:1; }
+
+    /* Revenue Potential */
+    #revenuePotential{
+      margin-top:10px; font-size:16px; font-weight:bold; color:#ffb347;
+      background:#1f2937; border:1px solid #ff9800; border-radius:8px; padding:10px; text-align:center;
+    }
+  </style>
+
+  <!-- PapaParse -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+  <div id="pageWrap">
+
+    <div class="card instruction">
+      <h1>Improve Ranking with Search Query Performance</h1>
+      <h3>SEO Pulls your Organic Ranks</h3>
+      <div class="strength-row">
+        <div id="strengthTitle" class="strength-box strength-low">Title Coverage Strength: 0%</div>
+        <div id="strengthBullets" class="strength-box strength-low">Bullets Coverage Strength: 0%</div>
+      </div>
+      <div id="revenuePotential">Revenue Potential (missing in Title & Bullets): $0</div>
+
+      <div class="instruction-columns">
+        <div>
+          <h2>📘 How to Use This Report</h2>
+          <ul>
+            <li><b>Step 1:</b> Export your <b>Search Query Performance</b> CSV for the ASIN.</li>
+            <li><b>Step 2:</b> Ensure first header is <b>Search Query</b> (or “Customer Search Term”).</li>
+            <li><b>Step 3:</b> Upload the file and click <b>Build Root KWs</b>.</li>
+          </ul>
+        </div>
+        <div>
+          <h2>🚀 How this Report Helps You</h2>
+          <ul>
+            <li>Identify missing keywords in Title & Bullets.</li>
+            <li>Prioritize high-volume converting queries for PPC spend.</li>
+            <li>Estimate revenue contribution per keyword root.</li>
+            <li>Optimize organic rank with exact-match keyword targeting.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div class="card">
+        <h2>1) Upload SQP CSV</h2>
+        <input id="csvFile" type="file" accept=".csv" />
+        <label>Max n-gram</label>
+        <input id="ngramMax" type="number" value="2" />
+        <label><input id="useExactN" type="checkbox" /> Use exactly N words</label>
+        <label>Min Purchases (ASIN Count)</label>
+        <input id="minPurch" type="number" value="1" />
+        <label>Min Clicks (ASIN Count)</label>
+        <input id="minClicks" type="number" value="0" />
+        <button id="buildBtn" class="btn primary">Build Root KWs</button>
+        <button id="exportBtn" class="btn">Export CSV</button>
+        <div id="rowCount">0 rows</div>
+      </div>
+
+      <div class="card">
+        <h2>2) Map to Title & Bullets</h2>
+        <label>Title</label>
+        <input id="titleInput" type="text" placeholder="Paste your product title" />
+        <label>Bullets (one per line)</label>
+        <textarea id="bulletsInput" placeholder="• Bullet 1&#10;• Bullet 2&#10;• Bullet 3"></textarea>
+        <label><input id="injectToggle" type="checkbox" checked /> Auto-inject selected Root KWs</label>
+        <button id="evalBtn" class="btn">Evaluate Coverage</button>
+        <button id="suggestBtn" class="btn warn">Suggest Better Content</button>
+        <div id="suggestedWrap" style="display:none">
+          <label>Suggested Content</label>
+          <textarea id="suggestedTitle" readonly></textarea>
+        </div>
+        <h2>Root KW Breakdown</h2>
+        <div id="tableWrap">Run <b>Build Root KWs</b> to populate the table.</div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <!-- Logic -->
+  <script>
+  // Helpers
+  const $ = q => document.querySelector(q);
+  const toast = msg => { const t=$('#toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2500); };
+
+  let RAW_ROWS=[], ROOT_ROWS=[], HEADER_MAP={}, SELECTED_ROOTS=new Set();
+  let currentSort={col:'vol',asc:false};
+
+  function setStrengthBox(el,label,percent){
+    el.textContent=`${label}: ${percent}%`;
+    if(percent>70) el.className='strength-box strength-good';
+    else if(percent>40) el.className='strength-box strength-mid';
+    else el.className='strength-box strength-low';
+  }
+  function updateStrength(){
+    const total=ROOT_ROWS.length||0;
+    const titleCovered=ROOT_ROWS.filter(r=>r.inTitle).length;
+    const bulletsCovered=ROOT_ROWS.filter(r=>r.inBullets).length;
+    setStrengthBox($('#strengthTitle'),'Title Coverage Strength', total?Math.round((titleCovered/total)*100):0);
+    setStrengthBox($('#strengthBullets'),'Bullets Coverage Strength', total?Math.round((bulletsCovered/total)*100):0);
+    const missingRev=ROOT_ROWS.filter(r=>!r.inTitle && !r.inBullets).reduce((s,r)=>s+r.rev,0);
+    $('#revenuePotential').textContent = "Revenue Potential (missing in Title & Bullets): $" + missingRev.toFixed(2);
+  }
+
+  function normalizeHeader(h){ return String(h||'').toLowerCase().trim().replace(/[^a-z0-9]/g,''); }
+  const STOPWORDS=new Set(['for','the','is','am','i','and','to','of','in','on','with','a','an']);
+
+  // Expanded header aliases (more tolerant across SQP exports)
+  const HEADER_ALIASES={
+    search_query: new Set(['searchquery','search_query','search query','customersearchterm','customer search term','searchterm','search term']),
+    purchases_asin_count: new Set(['purchasesasincount','purchasesasin','purchases_asin_count','purchases:asin count','purchases asin count','asins purchased count']),
+    purchases_total_count: new Set(['purchasestotalcount','purchasestotal','purchases_total_count','purchases:total count','purchases total count','total purchases']),
+    clicks_asin_count: new Set(['clicksasincount','clicksasin','clicks_asin_count','clicks:asin count','clicks asin count','asins clicks count']),
+    clicks_total_count: new Set(['clickstotalcount','clickstotal','clicks_total_count','clicks:total count','clicks total count','total clicks']),
+    search_query_volume: new Set(['searchqueryvolume','search volume','search_query_volume','searches']),
+    purchases_price_median: new Set(['purchasespricemedian','price median','purchases: price (median)','medianprice','median price'])
+  };
+
+  function guessHeaderIndex(norm, keywords){
+    for(let i=0;i<norm.length;i++){
+      if(keywords.has(norm[i])) return i;
+    }
+    // Fallback: heuristic search for search_query
+    if(keywords === HEADER_ALIASES.search_query){
+      for(let i=0;i<norm.length;i++){
+        if(norm[i].startsWith('search') && (norm[i].includes('query')||norm[i].includes('term'))) return i;
+      }
+    }
+    return -1;
+  }
+
+  function canonicalizeHeaders(headers){
+    const norm=headers.map(normalizeHeader);
+    const map={};
+    for(const [canon,vars] of Object.entries(HEADER_ALIASES)){
+      map[canon]=guessHeaderIndex(norm, vars);
+    }
+    return {map, norm};
+  }
+
+  function parseNumber(x){
+    const n=Number(String(x??'').replace(/,/g,'').trim());
+    return Number.isFinite(n)?n:0;
+  }
+  function cleanText(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim(); }
+  function ngrams(text,maxN=2,exact=false){
+    const toks=cleanText(text).split(' ').filter(t=>t && !STOPWORDS.has(t));
+    const out=[]; const startN=exact?maxN:1;
+    for(let n=startN;n<=maxN;n++){ for(let i=0;i<=toks.length-n;i++){ out.push(toks.slice(i,i+n).join(' ')); } }
+    return out;
+  }
+  function containsPhrase(hay,needle){ return cleanText(hay).includes(cleanText(needle)); }
+
+  // CSV loader
+  $('#csvFile').addEventListener('change', e=>{
+    const file=e.target.files[0]; if(!file) return;
+    Papa.parse(file, {
+      header:true, skipEmptyLines:true,
+      complete: res=>{
+        const headers = res.meta?.fields?.length ? res.meta.fields : (res.data[0] ? Object.keys(res.data[0]) : []);
+        const {map} = canonicalizeHeaders(headers);
+        HEADER_MAP = map;
+
+        if(HEADER_MAP.search_query===-1){
+          RAW_ROWS=[]; $('#rowCount').textContent='0 rows';
+          toast('Missing required header: Search Query / Customer Search Term');
+          return;
+        }
+
+        RAW_ROWS = res.data
+          .map(r=>{
+            const g = k => headers[HEADER_MAP[k]];
+            return {
+              search_query: r[g('search_query')],
+              purchases_asin_count: HEADER_MAP.purchases_asin_count!==-1 ? parseNumber(r[g('purchases_asin_count')]) : 0,
+              purchases_total_count: HEADER_MAP.purchases_total_count!==-1 ? parseNumber(r[g('purchases_total_count')]) : 0,
+              clicks_asin_count: HEADER_MAP.clicks_asin_count!==-1 ? parseNumber(r[g('clicks_asin_count')]) : 0,
+              clicks_total_count: HEADER_MAP.clicks_total_count!==-1 ? parseNumber(r[g('clicks_total_count')]) : 0,
+              search_volume: HEADER_MAP.search_query_volume!==-1 ? parseNumber(r[g('search_query_volume')]) : 0,
+              price_median: HEADER_MAP.purchases_price_median!==-1 ? parseNumber(r[g('purchases_price_median')]) : 0
+            };
+          })
+          .filter(x => x.search_query);
+
+        $('#rowCount').textContent = RAW_ROWS.length + ' rows';
+        toast('CSV loaded: ' + RAW_ROWS.length + ' rows');
+      },
+      error: err=>{ console.error(err); toast('CSV parse error'); }
+    });
+  });
+
+  // Build Root KWs
+  $('#buildBtn').addEventListener('click', ()=>{
+    if(!RAW_ROWS.length) return toast('No SQP rows loaded');
+    const maxN = parseInt($('#ngramMax').value)||2;
+    const exact = $('#useExactN').checked;
+    const minP = parseInt($('#minPurch').value)||0;
+    const minC = parseInt($('#minClicks').value)||0;
+
+    const agg = new Map();
+    for(const row of RAW_ROWS){
+      if(row.purchases_asin_count < minP || row.clicks_asin_count < minC) continue;
+      const grams = ngrams(row.search_query, maxN, exact);
+      for(const g of grams){
+        const prev = agg.get(g) || {root:g,sq:0,p:0,pt:0,c:0,ct:0,vol:0,rev:0,inTitle:false,inBullets:false};
+        prev.sq++;
+        prev.p  += row.purchases_asin_count;
+        prev.pt += row.purchases_total_count;
+        prev.c  += row.clicks_asin_count;
+        prev.ct += row.clicks_total_count;
+        prev.vol+= row.search_volume;
+        prev.rev+= row.price_median * row.purchases_total_count;
+        agg.set(g, prev);
+      }
+    }
+    ROOT_ROWS = [...agg.values()].map(r=>({...r, cr: r.c ? ((r.p/r.c)*100) : 0}));
+    sortTable(currentSort.col, currentSort.asc);
+  });
+
+  // Evaluate Coverage
+  $('#evalBtn').addEventListener('click', ()=>{
+    if(!ROOT_ROWS.length) return toast('Build first');
+    const title=$('#titleInput').value||'', bullets=$('#bulletsInput').value||'';
+    for(const r of ROOT_ROWS){ r.inTitle = containsPhrase(title, r.root); r.inBullets = containsPhrase(bullets, r.root); }
+    renderTable(); updateStrength();
+  });
+
+  // Suggest Content
+  $('#suggestBtn').addEventListener('click', ()=>{
+    if(!ROOT_ROWS.length) return toast('Build first');
+    let t=$('#titleInput').value||'', b=$('#bulletsInput').value||'';
+    if($('#injectToggle').checked){
+      const chosen=[...SELECTED_ROOTS];
+      for(const r of ROOT_ROWS){
+        if(!chosen.includes(r.root)) continue;
+        if(!r.inTitle && (t+' '+r.root).length<180) t+=' | '+r.root;
+        else if(!r.inBullets) b+='\n• '+r.root;
+      }
+    }
+    $('#suggestedTitle').value='Title: '+t+'\nBullets:\n'+b;
+    $('#suggestedWrap').style.display='block';
+  });
+
+  function toggleSelect(root){
+    if(SELECTED_ROOTS.has(root)) SELECTED_ROOTS.delete(root); else SELECTED_ROOTS.add(root);
+    renderTable();
+  }
+  window.toggleSelect = toggleSelect; // expose for onclick in table rows
+
+  function sortTable(col, asc){
+    currentSort={col,asc};
+    ROOT_ROWS.sort((a,b)=>{
+      const va=(col==='cr') ? a.cr : a[col];
+      const vb=(col==='cr') ? b.cr : b[col];
+      if(typeof va==="string") return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+      return asc ? va - vb : vb - va;
+    });
+    renderTable();
+  }
+  window.sortTable = sortTable; // expose for header onclick
+
+  function renderTable(){
+    const w=$('#tableWrap');
+    if(!ROOT_ROWS.length){ w.innerHTML='Run <b>Build Root KWs</b>'; updateStrength(); return; }
+
+    const rows = ROOT_ROWS.map(r=>{
+      const matchTag = (r.inTitle||r.inBullets) ? '<span class="highlight-exact">Exact</span>' : '<span class="highlight-broad">Broad</span>';
+      return `<tr class="selectBox" onclick="toggleSelect('${r.root.replace(/'/g,"&#39;")}')">
+        <td>${SELECTED_ROOTS.has(r.root)?'✅':''} ${r.root}</td>
+        <td>${r.sq}</td>
+        <td>${r.vol}</td>
+        <td>${r.p}</td>
+        <td>${r.pt}</td>
+        <td>${r.c}</td>
+        <td>${r.ct}</td>
+        <td>${r.cr.toFixed(1)}%</td>
+        <td>${r.rev.toFixed(2)}</td>
+        <td>${matchTag}</td>
+      </tr>`;
+    }).join('');
+
+    const headers = `<tr>
+      <th onclick="sortTable('root',  currentSort.col==='root' ? !currentSort.asc : true)">Root <span class="arrow">${currentSort.col==='root'?(currentSort.asc?'▲':'▼'):''}</span></th>
+      <th onclick="sortTable('sq',    currentSort.col==='sq' ? !currentSort.asc : true)">SQ <span class="tooltip">❓<span class="tooltiptext"># of queries containing this root keyword</span></span><span class="arrow">${currentSort.col==='sq'?(currentSort.asc?'▲':'▼'):''}</span></th>
+      <th onclick="sortTable('vol',   currentSort.col==='vol'? !currentSort.asc : true)">Search Volume <span class="tooltip">❓<span class="tooltiptext">Aggregated SQP volume across all queries containing root</span></span><span class="arrow">${currentSort.col==='vol'?(currentSort.asc?'▲':'▼'):''}</span></th>
+      <th onclick="sortTable('p',     currentSort.col==='p'  ? !currentSort.asc : true)">P(ASIN) <span class="tooltip">❓<span class="tooltiptext">Purchases from your ASIN(s)</span></span><span class="arrow">${currentSort.col==='p'?(currentSort.asc?'▲':'▼'):''}</span></th>
+      <th onclick="sortTable('pt',    currentSort.col==='pt' ? !currentSort.asc : true)">P(Total) <span class="tooltip">❓<span class="tooltiptext">Total purchases across all listings</span></span><span class="arrow">${currentSort.col==='pt'?(currentSort.asc?'▲':'▼'):''}</span></th>
+      <th onclick="sortTable('c',     currentSort.col==='c'  ? !currentSort.asc : true)">C(ASIN) <span class="tooltip">❓<span class="tooltiptext">Clicks on your ASIN(s)</span></span><span class="arrow">${currentSort.col==='c'?(currentSort.asc?'▲':'▼'):''}</span></th>
+      <th onclick="sortTable('ct',    currentSort.col==='ct' ? !currentSort.asc : true)">C(Total) <span class="tooltip">❓<span class="tooltiptext">Total clicks across all listings</span></span><span class="arrow">${currentSort.col==='ct'?(currentSort.asc?'▲':'▼'):''}</span></th>
+      <th onclick="sortTable('cr',    currentSort.col==='cr' ? !currentSort.asc : true)">CR% <span class="tooltip">❓<span class="tooltiptext">ASIN Purchases ÷ ASIN Clicks</span></span><span class="arrow">${currentSort.col==='cr'?(currentSort.asc?'▲':'▼'):''}</span></th>
+      <th onclick="sortTable('rev',   currentSort.col==='rev'? !currentSort.asc : true)">Revenue <span class="tooltip">❓<span class="tooltiptext">Median Price × Total Purchases</span></span><span class="arrow">${currentSort.col==='rev'?(currentSort.asc?'▲':'▼'):''}</span></th>
+      <th>Match Type</th>
+    </tr>`;
+
+    w.innerHTML = `<table><thead>${headers}</thead><tbody>${rows}</tbody></table>`;
+    updateStrength();
+  }
+
+  // Optional: export aggregated table
+  $('#exportBtn').addEventListener('click', ()=>{
+    if(!ROOT_ROWS.length) return toast('Nothing to export');
+    const header = ['Root','SQ','Search Volume','P(ASIN)','P(Total)','C(ASIN)','C(Total)','CR%','Revenue','MatchType'];
+    const data = ROOT_ROWS.map(r=>[
+      r.root, r.sq, r.vol, r.p, r.pt, r.c, r.ct, r.cr.toFixed(1)+'%', r.rev.toFixed(2), (r.inTitle||r.inBullets)?'Exact':'Broad'
+    ]);
+    const csv = [header, ...data].map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'root_keywords.csv'; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  </script>
+</body>
+</html>

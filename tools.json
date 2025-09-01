@@ -97,5 +97,19 @@
       "Download affected SKUs as CSV"
     ],
     "thumb": ""
+  },
+  {
+    "slug": "sqp-seo-ranking",
+    "name": "SQP SEO Ranking",
+    "desc": "Upload your Search Query Performance report and visualize SEO keyword ranks, revenue potential, and ranking gaps.",
+    "tags": ["Amazon", "Search Query Performance", "SEO", "Ranking"],
+    "status": "live",
+    "features": [
+      "Keyword-level SEO rank tracking",
+      "Revenue potential calculation",
+      "Highlight rank gaps vs competitors",
+      "Export insights for keyword targeting"
+    ],
+    "thumb": ""
   }
 ]

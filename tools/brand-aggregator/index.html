@@ -8,7 +8,6 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Brand vs Non-Brand PPC Aggregator">
   <meta property="og:description" content="Free tool: upload your Amazon ST report (CSV/XLSX), split branded vs non-branded, and export insights.">
-  <!-- Replace this image URL after you upload og-image.png to your repo -->
   <meta property="og:image" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/og-image.png">
   <meta property="og:url" content="https://mfarhanwaqar-arch.github.io/brand-aggregator/">
   <!-- Twitter (X) -->
@@ -39,7 +38,7 @@
     .btn.primary{background:linear-gradient(135deg,#0ea5e9,#22c55e);border:none}
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#0b1220;border:1px solid #2a3441}
-    table{border-collapse:collapse;margin-top:16px;width:100%;font-variant-numeric:tabular-nums}
+    table{border-collapse:collapse;margin-top:16px;width:100%;font-variant-numeric:tabular-nums; table-layout:fixed}
     th,td{border-bottom:1px solid #1f2937;padding:10px;text-align:right}
     th{position:sticky;top:0;background:#0b1220;z-index:1}
     td:first-child,th:first-child{text-align:left;white-space:normal;overflow-wrap:anywhere;word-break:break-word;max-width:28ch}
@@ -52,7 +51,6 @@
     .footer{margin:28px 0 8px;color:#94a3b8;font-size:12px}
     .flex{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
     .search{width:260px}
-    /* Wrap long Search Terms and keep table widths sane */
     #termsOut table, #aggOut table { table-layout: fixed; }
     #termsOut td:first-child, #termsOut th:first-child,
     #aggOut td:first-child, #aggOut th:first-child {
@@ -63,14 +61,17 @@
     }
     .btn.toggle{padding:8px 10px}
     .btn.toggle.active{border-color:#22c55e; box-shadow:0 0 0 1px #22c55e inset}
-  .cta {display:flex; gap:12px; flex-wrap:wrap; margin: 12px 0 16px}
+    .cta {display:flex; gap:12px; flex-wrap:wrap; margin: 12px 0 16px}
     .ctabtn { display:inline-block; font-weight:800; font-size:16px; text-decoration:none; padding:12px 16px; border-radius:12px; border:1px solid #22c55e; background:linear-gradient(135deg,#22c55e,#0ea5e9); color:#0b0d10; box-shadow:0 6px 18px rgba(0,0,0,.35) }
     .ctabtn.secondary { background:#0b1220; color:var(--text); border:1px solid #0ea5e9 }
     .ctabtn:focus, .ctabtn:hover { filter:brightness(1.06) }
-  /* How-to card tweaks */
     #howto ol { list-style: decimal; }
     #howto li { margin: 4px 0; }
-</style>
+    /* Sorting header button */
+    .thbtn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+    .thbtn .dir{opacity:.7;font-size:12px}
+    th:hover .thbtn .dir{opacity:1}
+  </style>
 </head>
 <body>
   <div class="wrap">
@@ -106,7 +107,7 @@
         </div>
         <div>
           <label>Brand ASINs (comma or newline separated)</label>
-          <textarea id="brandASINs" placeholder="B0ABC123, B0XYZ456\nor one per line"></textarea>
+          <textarea id="brandASINs" placeholder="B0ABC123, B0XYZ456&#10;or one per line"></textarea>
           <div class="badge">ASINs match anywhere in the search term</div>
         </div>
         <div>
@@ -142,7 +143,7 @@
           <div id="brandToggle" class="flex" style="gap:6px">
             <button type="button" class="btn toggle active" data-mode="all">All</button>
             <button type="button" class="btn toggle" data-mode="branded">Branded</button>
-            <button type="button" class="btn toggle" data-mode="non">Non‑Branded</button>
+            <button type="button" class="btn toggle" data-mode="non">Non-Branded</button>
           </div>
           <input id="termFilter" class="search" placeholder="Filter terms..." />
         </div>
@@ -190,22 +191,23 @@
       const {ctr,cvr,acos,cpc,roas} = compute(m);
       return `<tr>
         <td>${label}</td>
-        <td>${fmt0(m.impressions)}</td>
-        <td>${fmt0(m.clicks)}</td>
-        <td>${fmt2(ctr)}</td>
-        <td>${fmt2(m.spend)}</td>
-        <td>${fmt2(m.sales)}</td>
-        <td>${fmt0(m.orders)}</td>
-        <td>${fmt0(m.units)}</td>
-        <td>${fmt2(cvr)}</td>
-        <td>${fmt2(acos)}</td>
-        <td>${fmt2(cpc)}</td>
-        <td>${fmt2(roas)}</td>`;
+        <td data-num="${m.impressions}">${fmt0(m.impressions)}</td>
+        <td data-num="${m.clicks}">${fmt0(m.clicks)}</td>
+        <td data-num="${ctr}">${fmt2(ctr)}</td>
+        <td data-num="${m.spend}">${fmt2(m.spend)}</td>
+        <td data-num="${m.sales}">${fmt2(m.sales)}</td>
+        <td data-num="${m.orders}">${fmt0(m.orders)}</td>
+        <td data-num="${m.units}">${fmt0(m.units)}</td>
+        <td data-num="${cvr}">${fmt2(cvr)}</td>
+        <td data-num="${acos}">${fmt2(acos)}</td>
+        <td data-num="${cpc}">${fmt2(cpc)}</td>
+        <td data-num="${roas}">${fmt2(roas)}</td>
+      </tr>`;
     }
 
     // ===== Column detection =====
     function detectColumn(headers, candidates){
-      const lowerMap = new Map(headers.map(h=>[h.toLowerCase().trim(),h]));
+      const lowerMap = new Map(headers.map(h=>[String(h).toLowerCase().trim(),h]));
       for(const c of candidates){
         const key = c.toLowerCase();
         if (lowerMap.has(key)) return lowerMap.get(key);
@@ -240,6 +242,93 @@
       };
     }
 
+    // ===== Sorting (fast, stable, numeric-aware) =====
+    function attachSorting(containerId, defaultColIdx = null, defaultDir = 'desc'){
+      const container = document.getElementById(containerId);
+      if(!container) return;
+      const table = container.querySelector('table');
+      if(!table) return;
+
+      const thead = table.querySelector('thead');
+      const tbody = table.querySelector('tbody');
+      if(!thead || !tbody) return;
+
+      const headers = Array.from(thead.querySelectorAll('th'));
+      headers.forEach((th, idx) => {
+        // prevent double-bind if re-run
+        if (th.dataset.sortAttached) return;
+        th.dataset.sortAttached = '1';
+
+        const label = th.textContent;
+        th.textContent = '';
+        const btn = document.createElement('button');
+        btn.className = 'thbtn';
+        const spanText = document.createElement('span');
+        spanText.textContent = label;
+        const spanDir = document.createElement('span');
+        spanDir.className = 'dir';
+        spanDir.textContent = '↕';
+        btn.appendChild(spanText);
+        btn.appendChild(spanDir);
+        th.appendChild(btn);
+
+        let asc = true;
+
+        btn.addEventListener('click', () => {
+          // stable sort: index as tiebreaker
+          const rows = Array.from(tbody.rows).map((tr,i)=>({tr,i}));
+          const numOrText = (cell) => {
+            const rawNum = cell.getAttribute('data-num');
+            if (rawNum !== null) {
+              const n = parseFloat(rawNum);
+              if (!Number.isNaN(n)) return {type:'num', val:n};
+            }
+            const txt = cell.textContent.trim();
+            const parsed = parseFloat(txt.replace(/[^0-9.\-]/g,''));
+            if (!Number.isNaN(parsed) && /\d/.test(txt)) return {type:'num', val:parsed};
+            return {type:'txt', val:txt.toLowerCase()};
+          };
+
+          rows.sort((A,B)=>{
+            const aCell = A.tr.cells[idx];
+            const bCell = B.tr.cells[idx];
+            const a = numOrText(aCell);
+            const b = numOrText(bCell);
+
+            let cmp = 0;
+            if (a.type==='num' && b.type==='num') cmp = a.val - b.val;
+            else if (a.type==='txt' && b.type==='txt') cmp = a.val.localeCompare(b.val);
+            else cmp = (a.type==='num') ? -1 : 1; // numbers before text
+
+            if (!asc) cmp = -cmp;
+            // stable
+            if (cmp===0) return A.i - B.i;
+            return cmp;
+          });
+
+          const frag = document.createDocumentFragment();
+          rows.forEach(r=>frag.appendChild(r.tr));
+          tbody.appendChild(frag);
+
+          asc = !asc;
+          spanDir.textContent = asc ? '▲' : '▼';
+        });
+      });
+
+      // Optional default sort
+      if (defaultColIdx !== null){
+        const th = headers[defaultColIdx];
+        if (th){
+          const btn = th.querySelector('.thbtn');
+          if (btn){
+            // Click twice if defaultDir is 'desc' (first click asc, second click desc)
+            btn.click();
+            if (defaultDir === 'desc') btn.click();
+          }
+        }
+      }
+    }
+
     // ===== Rendering =====
     function renderSummary(branded, non){
       const total = { ...initMetrics() }; add(total, branded); add(total, non);
@@ -266,54 +355,70 @@
       </tbody></table>`;
       qs('aggOut').innerHTML = html;
       qs('aggCard').style.display='';
+      // Attach sorting to Aggregated; no default needed
+      attachSorting('aggOut', null, 'desc');
     }
 
     function renderTerms(terms){
-      const rowsHtml = terms.map(t=>{ 
-        const m = compute(t.metrics); 
-        return `<tr data-branded="${t.branded ? 'yes' : 'no'}">
+      // Build rows with data-num attributes to speed numeric sort
+      const frag = document.createDocumentFragment();
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      thead.innerHTML = `<tr>
+        <th>Search Term</th><th>Branded?</th><th>Impressions</th><th>Clicks</th><th>CTR %</th><th>Spend</th><th>Sales</th><th>Orders</th><th>Units</th><th>CVR %</th><th>ACOS %</th><th>CPC</th><th>ROAS</th>
+      </tr>`;
+      const tbody = document.createElement('tbody');
+
+      for (const t of terms){
+        const m = compute(t.metrics);
+        const tr = document.createElement('tr');
+        tr.dataset.branded = t.branded ? 'yes' : 'no';
+        tr.innerHTML = `
           <td>${t.term}</td>
           <td>${t.branded ? 'Yes' : 'No'}</td>
-          <td>${fmt0(t.metrics.impressions)}</td>
-          <td>${fmt0(t.metrics.clicks)}</td>
-          <td>${fmt2(m.ctr)}</td>
-          <td>${fmt2(t.metrics.spend)}</td>
-          <td>${fmt2(t.metrics.sales)}</td>
-          <td>${fmt0(t.metrics.orders)}</td>
-          <td>${fmt0(t.metrics.units)}</td>
-          <td>${fmt2(m.cvr)}</td>
-          <td>${fmt2(m.acos)}</td>
-          <td>${fmt2(m.cpc)}</td>
-          <td>${fmt2(m.roas)}</td>
-        </tr>`; 
-      }).join('');
+          <td data-num="${t.metrics.impressions}">${fmt0(t.metrics.impressions)}</td>
+          <td data-num="${t.metrics.clicks}">${fmt0(t.metrics.clicks)}</td>
+          <td data-num="${m.ctr}">${fmt2(m.ctr)}</td>
+          <td data-num="${t.metrics.spend}">${fmt2(t.metrics.spend)}</td>
+          <td data-num="${t.metrics.sales}">${fmt2(t.metrics.sales)}</td>
+          <td data-num="${t.metrics.orders}">${fmt0(t.metrics.orders)}</td>
+          <td data-num="${t.metrics.units}">${fmt0(t.metrics.units)}</td>
+          <td data-num="${m.cvr}">${fmt2(m.cvr)}</td>
+          <td data-num="${m.acos}">${fmt2(m.acos)}</td>
+          <td data-num="${m.cpc}">${fmt2(m.cpc)}</td>
+          <td data-num="${m.roas}">${fmt2(m.roas)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
 
-      const html = `<table><thead><tr>
-        <th>Search Term</th><th>Branded?</th><th>Impressions</th><th>Clicks</th><th>CTR %</th><th>Spend</th><th>Sales</th><th>Orders</th><th>Units</th><th>CVR %</th><th>ACOS %</th><th>CPC</th><th>ROAS</th>
-      </tr></thead><tbody>${rowsHtml}</tbody></table>`;
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      frag.appendChild(table);
 
-      qs('termsOut').innerHTML = html;
+      const out = qs('termsOut');
+      out.innerHTML = '';
+      out.appendChild(frag);
       qs('termsCard').style.display='';
       qs('termCount').textContent = `${terms.length.toLocaleString()} terms`;
 
+      // Attach sorting to Per-Term and default sort by Spend (col index 5, desc)
+      attachSorting('termsOut', 5, 'desc');
+
+      // Filtering
       let mode = 'all';
       function applyFilters(){
         const q = normalize(qs('termFilter').value.trim());
-        const trs = qs('termsOut').querySelectorAll('tbody tr');
+        const trs = tbody.querySelectorAll('tr');
         trs.forEach(tr => {
-          const cell = tr.cells && tr.cells[0];
-          const txt = normalize(cell ? cell.textContent : '');
-          const br = tr.dataset.branded; // 'yes' or 'no'
+          const txt = normalize(tr.cells[0].textContent);
+          const br = tr.dataset.branded;
           const modeMatch = mode==='all' || (mode==='branded' && br==='yes') || (mode==='non' && br==='no');
           const textMatch = !q || txt.includes(q);
           tr.style.display = (modeMatch && textMatch) ? '' : 'none';
         });
       }
-
-      // filter typing
       qs('termFilter').addEventListener('input', applyFilters);
 
-      // toggle buttons
       document.querySelectorAll('#brandToggle .btn.toggle').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('#brandToggle .btn.toggle').forEach(b=>b.classList.remove('active'));
@@ -343,7 +448,13 @@
           Papa.parse(file, { header:true, skipEmptyLines:true, complete: r=>resolve({rows:r.data, headers:r.meta.fields||[]} ), error: reject });
         } else if (ext === 'xlsx'){
           const fr = new FileReader();
-          fr.onload = e => { try{ const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'}); const ws = wb.Sheets[wb.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(ws, {defval:""}); const headers = XLSX.utils.sheet_to_json(ws, {header:1})[0] || []; resolve({rows, headers}); } catch(err){ reject(err); } };
+          fr.onload = e => { try{
+            const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+            const headers = XLSX.utils.sheet_to_json(ws, {header:1})[0] || [];
+            resolve({rows, headers});
+          } catch(err){ reject(err); } };
           fr.onerror = reject; fr.readAsArrayBuffer(file);
         } else {
           reject(new Error('Unsupported file type. Please upload .csv or .xlsx'));
@@ -386,6 +497,7 @@
       const totals = { branded: initMetrics(), non: initMetrics() };
       const termMap = new Map(); // term -> {metrics, branded}
 
+      // Fast aggregation
       for(const row of data){
         const termRaw = row[cols.term];
         const term = String(termRaw||'').trim();
@@ -402,7 +514,7 @@
       renderSummary(totals.branded, totals.non);
       renderAgg(totals.branded, totals.non);
 
-      // Build per-term array sorted by spend desc
+      // Per-term array (pre-sorted by Spend desc)
       const termRows = Array.from(termMap.values()).sort((a,b)=>b.metrics.spend - a.metrics.spend);
       renderTerms(termRows);
 
@@ -476,7 +588,7 @@
       ctx.fillStyle = '#e5e7eb';
       ctx.textAlign = 'center';
       ctx.font = 'bold 56px Inter, Arial, sans-serif';
-      ctx.fillText('Brand vs Non‑Brand PPC Aggregator', w/2, h*0.42, w-80);
+      ctx.fillText('Brand vs Non-Brand PPC Aggregator', w/2, h*0.42, w-80);
       ctx.font = '24px Inter, Arial, sans-serif';
       ctx.fillText('Free tool for Amazon ST reports (CSV/XLSX)', w/2, h*0.58, w-80);
 
@@ -496,4 +608,3 @@
   </script>
 </body>
 </html>
-
